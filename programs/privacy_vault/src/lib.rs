@@ -48,15 +48,18 @@ pub mod privacy_vault {
     pub fn deposit(
         ctx: Context<Deposit>,
         deposit_id: [u8; 32],
+        note_nonce: [u8; 32],
+        encrypted_note_data: Vec<u8>,
         signature: [u8; 64],
         amount: u64,
     ) -> Result<()> {
-        instructions::deposit(ctx, deposit_id, signature, amount)
+        instructions::deposit(ctx, deposit_id, note_nonce, encrypted_note_data, signature, amount)
     }
 
     pub fn withdraw(
         ctx: Context<Withdraw>,
         deposit_id: [u8; 32],
+        note_nonce: [u8; 32],
         destination_wallet: Pubkey,
         destination_token_account: Pubkey,
         relayer: Pubkey,
@@ -64,6 +67,7 @@ pub mod privacy_vault {
         instructions::withdraw(
             ctx,
             deposit_id,
+            note_nonce,
             destination_wallet,
             destination_token_account,
             relayer,

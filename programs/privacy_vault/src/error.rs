@@ -14,4 +14,6 @@ pub enum ErrorCode {
     InvalidAmount,
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
+    #[msg("Encrypted note data too large")]
+    NoteTooLarge,
 }
