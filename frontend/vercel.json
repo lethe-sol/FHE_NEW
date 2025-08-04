@@ -1,0 +1,13 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "framework": "create-react-app",
+  "env": {
+    "REACT_APP_RPC_URL": "@rpc_url"
+  },
+  "build": {
+    "env": {
+      "REACT_APP_RPC_URL": "@rpc_url"
+    }
+  }
+}
