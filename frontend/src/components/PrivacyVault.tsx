@@ -131,10 +131,10 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .deposit(
-                    Array.from(depositId),
-                    Array.from(noteNonce),
-                    Array.from(encryptedNoteData),
-                    signature,
+                    new Uint8Array(depositId),
+                    new Uint8Array(noteNonce),
+                    new Uint8Array(encryptedNoteData),
+                    new Uint8Array(signature),
                     amount
                 )
                 .accounts({
@@ -179,8 +179,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .withdraw(
-                    depositId,
-                    noteNonce,
+                    new Uint8Array(depositId),
+                    new Uint8Array(noteNonce),
                     destinationWalletPubkey,
                     relayerPubkey
                 )
