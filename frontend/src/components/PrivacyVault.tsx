@@ -98,6 +98,8 @@ function PrivacyVault() {
             const vaultConfigExists = !!vaultConfigAccountInfo;
             const isFullyInitialized = vaultExists && vaultConfigExists;
             
+            console.log('Vault status check:', { vaultExists, vaultConfigExists, isFullyInitialized });
+            
             setVaultInitialized(isFullyInitialized);
             
             if (isFullyInitialized) {
@@ -161,6 +163,7 @@ function PrivacyVault() {
 
         try {
             setStatus('Initializing vault configuration...');
+            console.log('Starting VaultConfig initialization...');
             
             const program = getProgram(connection, wallet);
             const [vaultConfigPDA] = getVaultConfigPDA(PROGRAM_ID);
@@ -184,6 +187,7 @@ function PrivacyVault() {
                 })
                 .rpc();
             
+            console.log('VaultConfig initialization successful:', tx);
             setStatus(`Vault config initialized! Transaction: ${tx.substring(0, 20)}...`);
             
         } catch (error) {
@@ -191,6 +195,7 @@ function PrivacyVault() {
             const errorMessage = error instanceof Error ? error.message : String(error);
             
             if (errorMessage.includes('already in use') || errorMessage.includes('already exists')) {
+                console.log('VaultConfig already exists, proceeding...');
                 setStatus('Vault config already exists! Proceeding to check vault status...');
             } else {
                 setStatus(`Vault config initialization failed: ${errorMessage}`);
@@ -223,7 +228,9 @@ function PrivacyVault() {
             const amount = 100000000;
             
             const vaultConfigAccount = await program.provider.connection.getAccountInfo(getVaultConfigPDA(PROGRAM_ID)[0]);
-            if (!vaultConfigAccount) throw new Error('Vault config not found');
+            if (!vaultConfigAccount) {
+                throw new Error('VaultConfig account not found. Please initialize the vault configuration first by clicking "2. Initialize Vault Config" button.');
+            }
             const vaultConfig = program.coder.accounts.decode('VaultConfig', vaultConfigAccount.data);
             const nextDepositId = vaultConfig.nextDepositId.toNumber();
             
@@ -298,7 +305,9 @@ function PrivacyVault() {
             const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
             
             const vaultConfigAccount = await program.provider.connection.getAccountInfo(getVaultConfigPDA(PROGRAM_ID)[0]);
-            if (!vaultConfigAccount) throw new Error('Vault config not found');
+            if (!vaultConfigAccount) {
+                throw new Error('VaultConfig account not found. Please initialize the vault configuration first by clicking "2. Initialize Vault Config" button.');
+            }
             const vaultConfig = program.coder.accounts.decode('VaultConfig', vaultConfigAccount.data);
             const nextDepositId = vaultConfig.nextDepositId.toNumber();
             
