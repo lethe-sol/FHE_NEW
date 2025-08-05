@@ -41,8 +41,8 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 ]
               },
               {
-                "kind": "arg",
-                "path": "commitment"
+                "kind": "account",
+                "path": "vault_config.next_deposit_id"
               }
             ]
           }
@@ -81,6 +81,31 @@ export const PRIVACY_VAULT_IDL: Idl = {
                   117,
                   108,
                   116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
                 ]
               }
             ]
@@ -343,7 +368,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
               },
               {
                 "kind": "arg",
-                "path": "commitment"
+                "path": "deposit_id"
               }
             ]
           }
@@ -400,6 +425,10 @@ export const PRIVACY_VAULT_IDL: Idl = {
         }
       ],
       "args": [
+        {
+          "name": "deposit_id",
+          "type": "u64"
+        },
         {
           "name": "commitment",
           "type": {
@@ -514,6 +543,10 @@ export const PRIVACY_VAULT_IDL: Idl = {
         "kind": "struct",
         "fields": [
           {
+            "name": "deposit_id",
+            "type": "u64"
+          },
+          {
             "name": "commitment",
             "type": {
               "array": [
@@ -588,6 +621,10 @@ export const PRIVACY_VAULT_IDL: Idl = {
             "type": "u64"
           },
           {
+            "name": "next_deposit_id",
+            "type": "u64"
+          },
+          {
             "name": "bump",
             "type": "u8"
           }
@@ -623,10 +660,11 @@ export function getVaultConfigPDA(programId: PublicKey) {
   );
 }
 
-export function getDepositMetadataPDA(commitment: Uint8Array | number[], programId: PublicKey) {
-  const commitmentBytes = commitment instanceof Uint8Array ? commitment : new Uint8Array(commitment);
+export function getDepositMetadataPDA(depositId: number, programId: PublicKey): [PublicKey, number] {
+  const depositIdBuffer = Buffer.alloc(8);
+  depositIdBuffer.writeBigUInt64LE(BigInt(depositId), 0);
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("deposit"), Buffer.from(commitmentBytes)],
+    [Buffer.from("deposit"), depositIdBuffer],
     programId
   );
 }

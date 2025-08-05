@@ -222,8 +222,11 @@ function PrivacyVault() {
             const signature = Buffer.from(new Uint8Array(64).fill(0));
             const amount = 100000000;
             
+            const vaultConfig = await program.account.VaultConfig.fetch(getVaultConfigPDA(PROGRAM_ID)[0]);
+            const nextDepositId = vaultConfig.nextDepositId.toNumber();
+            
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(commitment, PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(nextDepositId, PROGRAM_ID);
             const [encryptedNotePDA] = getEncryptedNotePDA(nullifierHash, PROGRAM_ID);
             
             console.log('Test values:', {
@@ -247,6 +250,7 @@ function PrivacyVault() {
                 .accounts({
                     deposit_metadata: depositMetadataPDA,
                     encrypted_note: encryptedNotePDA,
+                    vault_config: getVaultConfigPDA(PROGRAM_ID)[0],
                     vault: vaultPDA,
                     depositor: publicKey,
                     system_program: SystemProgram.programId,
@@ -291,7 +295,11 @@ function PrivacyVault() {
             const commitment = new Uint8Array(commitmentHash);
             const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
             
+            const vaultConfig = await program.account.VaultConfig.fetch(getVaultConfigPDA(PROGRAM_ID)[0]);
+            const nextDepositId = vaultConfig.nextDepositId.toNumber();
+            
             const withdrawalData = {
+                depositId: nextDepositId,
                 originalCommitment: Array.from(originalCommitment),
                 commitment: Array.from(commitment),
                 nullifierHash: Array.from(nullifierHash),
@@ -302,7 +310,7 @@ function PrivacyVault() {
             setWithdrawalString(withdrawalString);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(commitment, PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(nextDepositId, PROGRAM_ID);
             const [encryptedNotePDA] = getEncryptedNotePDA(nullifierHash, PROGRAM_ID);
             
             const encryptedNoteData = Buffer.from(new TextEncoder().encode(JSON.stringify({
@@ -326,6 +334,7 @@ function PrivacyVault() {
                 .accounts({
                     deposit_metadata: depositMetadataPDA,
                     encrypted_note: encryptedNotePDA,
+                    vault_config: getVaultConfigPDA(PROGRAM_ID)[0],
                     vault: vaultPDA,
                     depositor: publicKey,
                     system_program: SystemProgram.programId,
@@ -352,7 +361,7 @@ function PrivacyVault() {
             await fheManager.initialize();
             
             const withdrawalData = JSON.parse(atob(withdrawalString));
-            const { originalCommitment, commitment, nullifierHash, amount } = withdrawalData;
+            const { depositId, originalCommitment, commitment, nullifierHash, amount } = withdrawalData;
             
             if (!destinationWallet.trim()) {
                 setStatus('Please enter a destination wallet address');
@@ -362,7 +371,7 @@ function PrivacyVault() {
             const program = getProgram(connection, wallet);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(new Uint8Array(commitment), PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
             const [encryptedNotePDA] = getEncryptedNotePDA(new Uint8Array(nullifierHash), PROGRAM_ID);
             
             const destinationWalletPubkey = new PublicKey(destinationWallet.trim());
@@ -372,6 +381,7 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .withdraw(
+                    depositId,
                     Buffer.from(new Uint8Array(commitment)),
                     Buffer.from(new Uint8Array(nullifierHash)),
                     destinationWalletPubkey,
