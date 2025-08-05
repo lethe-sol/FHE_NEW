@@ -45,10 +45,18 @@ function PrivacyVault() {
         try {
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
             const accountInfo = await connection.getAccountInfo(vaultPDA);
-            setVaultInitialized(!!accountInfo);
+            const isInitialized = !!accountInfo;
+            setVaultInitialized(isInitialized);
+            
+            if (isInitialized) {
+                setStatus(`Vault is initialized! PDA: ${vaultPDA.toString().substring(0, 20)}...`);
+            } else {
+                setStatus('Vault not found. Please initialize the vault first.');
+            }
         } catch (error) {
             console.error('Error checking vault:', error);
             setVaultInitialized(false);
+            setStatus(`Error checking vault: ${error instanceof Error ? error.message : String(error)}`);
         }
     }, [publicKey]);
 
@@ -125,7 +133,7 @@ function PrivacyVault() {
                 timestamp: Date.now()
             }));
             
-            const signature = new Array(64).fill(0);
+            const signature = new Uint8Array(64);
             
             setStatus('Sending transaction...');
             

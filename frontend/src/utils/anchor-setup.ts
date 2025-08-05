@@ -618,14 +618,14 @@ export function getVaultConfigPDA(programId: PublicKey) {
 
 export function getDepositMetadataPDA(depositId: number[], programId: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("deposit"), Buffer.from(depositId)],
+    [Buffer.from("deposit"), Buffer.from(new Uint8Array(depositId))],
     programId
   );
 }
 
 export function getEncryptedNotePDA(noteNonce: number[], programId: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("note"), Buffer.from(noteNonce)],
+    [Buffer.from("note"), Buffer.from(new Uint8Array(noteNonce))],
     programId
   );
 }
