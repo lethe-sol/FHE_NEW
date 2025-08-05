@@ -24,7 +24,7 @@ pub struct Deposit<'info> {
     )]
     pub encrypted_note: Account<'info, EncryptedNote>,
     
-    /// CHECK: Vault account is a PDA with seeds [b"vault"] that stores SOL deposits
+    /// CHECK: This account is safe because it's a PDA validated by seeds and bump, no additional type checks needed
     #[account(
         mut,
         seeds = [b"vault"],
