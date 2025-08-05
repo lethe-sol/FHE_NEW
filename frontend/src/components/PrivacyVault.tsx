@@ -51,10 +51,11 @@ class FHEManager {
         if (!this.clientKey) throw new Error('FHE not initialized');
         
         const ciphertext = CompactCiphertextList.deserialize(encryptedData);
-        const decrypted = ciphertext.decrypt(this.clientKey);
+        const expandedList = ciphertext.expand();
+        const decrypted = expandedList.get_uint32(0).decrypt(this.clientKey);
         
         const result = new Uint8Array(32);
-        new DataView(result.buffer).setUint32(0, decrypted[0], true);
+        new DataView(result.buffer).setUint32(0, decrypted, true);
         return result;
     }
 }
