@@ -69,7 +69,7 @@ function PrivacyVault() {
         try {
             setStatus('Initializing vault...');
             
-            const program = getProgram(connection, window.solana, PROGRAM_ID);
+            const program = getProgram(connection, window.solana);
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
             
             const tx = await program.methods
@@ -98,7 +98,7 @@ function PrivacyVault() {
         try {
             setStatus('Testing simple deposit with hardcoded values...');
             
-            const program = getProgram(connection, window.solana, PROGRAM_ID);
+            const program = getProgram(connection, window.solana);
             
             const depositId = new Uint8Array(32).fill(1);
             const noteNonce = new Uint8Array(32).fill(2);
@@ -161,7 +161,7 @@ function PrivacyVault() {
         try {
             setStatus('Creating simple 0.1 SOL deposit...');
             
-            const program = getProgram(connection, window.solana, PROGRAM_ID);
+            const program = getProgram(connection, window.solana);
             
             const amount = 100000000; // 0.1 SOL in lamports
             const destinationWallet = publicKey.toString(); // Same as depositor
@@ -233,7 +233,7 @@ function PrivacyVault() {
             const withdrawalData = JSON.parse(atob(withdrawalString));
             const { depositId, noteNonce, destinationWallet: destWallet, amount } = withdrawalData;
             
-            const program = getProgram(connection, window.solana, PROGRAM_ID);
+            const program = getProgram(connection, window.solana);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
             const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);

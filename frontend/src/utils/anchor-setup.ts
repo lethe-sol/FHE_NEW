@@ -597,7 +597,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
   ]
 };
 
-export function getProgram(connection: Connection, wallet: any, programId: PublicKey) {
+export function getProgram(connection: Connection, wallet: any) {
   const provider = new AnchorProvider(connection, wallet, {});
   return new Program(PRIVACY_VAULT_IDL, provider);
 }
