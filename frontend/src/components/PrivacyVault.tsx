@@ -122,8 +122,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .deposit(
-                    depositId,
-                    noteNonce,
+                    Array.from(depositId),
+                    Array.from(noteNonce),
                     encryptedNoteData,
                     signature,
                     amount
@@ -196,8 +196,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .deposit(
-                    depositId,
-                    noteNonce,
+                    Array.from(depositId),
+                    Array.from(noteNonce),
                     encryptedNoteData,
                     signature,
                     amount
