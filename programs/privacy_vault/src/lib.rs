@@ -6,7 +6,7 @@ pub mod error;
 
 use instructions::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553");
 
 #[program]
 pub mod privacy_vault {
