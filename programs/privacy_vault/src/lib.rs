@@ -48,28 +48,26 @@ pub mod privacy_vault {
 
     pub fn deposit(
         ctx: Context<Deposit>,
-        commitment: [u8; 32],
-        nullifier_hash: [u8; 32],
+        deposit_id: [u8; 32],
+        note_nonce: [u8; 32],
         encrypted_note_data: Vec<u8>,
         signature: [u8; 64],
         amount: u64,
     ) -> Result<()> {
-        instructions::deposit(ctx, commitment, nullifier_hash, encrypted_note_data, signature, amount)
+        instructions::deposit(ctx, deposit_id, note_nonce, encrypted_note_data, signature, amount)
     }
 
     pub fn withdraw(
         ctx: Context<Withdraw>,
-        deposit_id: u64,
-        commitment: [u8; 32],
-        nullifier_hash: [u8; 32],
+        deposit_id: [u8; 32],
+        note_nonce: [u8; 32],
         destination_wallet: Pubkey,
         relayer: Pubkey,
     ) -> Result<()> {
         instructions::withdraw(
             ctx,
             deposit_id,
-            commitment,
-            nullifier_hash,
+            note_nonce,
             destination_wallet,
             relayer,
         )

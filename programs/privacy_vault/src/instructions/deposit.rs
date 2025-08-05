@@ -4,13 +4,13 @@ use crate::state::*;
 use crate::error::ErrorCode as VaultErrorCode;
 
 #[derive(Accounts)]
-#[instruction(commitment: [u8; 32], nullifier_hash: [u8; 32])]
+#[instruction(deposit_id: [u8; 32], note_nonce: [u8; 32])]
 pub struct Deposit<'info> {
     #[account(
         init,
         payer = depositor,
         space = DepositMetadata::LEN,
-        seeds = [b"deposit", vault_config.next_deposit_id.to_le_bytes().as_ref()],
+        seeds = [b"deposit", deposit_id.as_ref()],
         bump
     )]
     pub deposit_metadata: Account<'info, DepositMetadata>,
@@ -19,17 +19,11 @@ pub struct Deposit<'info> {
         init,
         payer = depositor,
         space = EncryptedNote::MAX_SIZE,
-        seeds = [b"note", nullifier_hash.as_ref()],
+        seeds = [b"note", note_nonce.as_ref()],
         bump
     )]
     pub encrypted_note: Account<'info, EncryptedNote>,
     
-    #[account(
-        mut,
-        seeds = [b"vault_config"],
-        bump = vault_config.bump
-    )]
-    pub vault_config: Account<'info, VaultConfig>,
     
     /// CHECK: This account is safe because it's a PDA validated by seeds and bump, no additional type checks needed
     #[account(
@@ -47,8 +41,8 @@ pub struct Deposit<'info> {
 
 pub fn deposit(
     ctx: Context<Deposit>,
-    commitment: [u8; 32],
-    nullifier_hash: [u8; 32],
+    deposit_id: [u8; 32],
+    note_nonce: [u8; 32],
     encrypted_note_data: Vec<u8>,
     signature: [u8; 64],
     amount: u64,
@@ -57,7 +51,7 @@ pub fn deposit(
     require!(encrypted_note_data.len() <= 1024, VaultErrorCode::NoteTooLarge);
     
     require!(signature.len() == 64, VaultErrorCode::InvalidSignature);
-    msg!("Signature verified for commitment: {:?}", commitment);
+    msg!("Signature verified for deposit ID: {:?}", deposit_id);
     
     system_program::transfer(
         CpiContext::new(
@@ -71,24 +65,19 @@ pub fn deposit(
     )?;
     
     let deposit_metadata = &mut ctx.accounts.deposit_metadata;
-    deposit_metadata.deposit_id = ctx.accounts.vault_config.next_deposit_id;
-    deposit_metadata.commitment = commitment;
+    deposit_metadata.deposit_id = deposit_id;
     deposit_metadata.amount = amount;
     deposit_metadata.timestamp = Clock::get()?.unix_timestamp;
     deposit_metadata.used = false;
-    deposit_metadata.nullifier_hash = nullifier_hash;
+    deposit_metadata.note_nonce = note_nonce;
     deposit_metadata.bump = ctx.bumps.deposit_metadata;
-    
-    ctx.accounts.vault_config.next_deposit_id = ctx.accounts.vault_config.next_deposit_id
-        .checked_add(1)
-        .ok_or(VaultErrorCode::ArithmeticOverflow)?;
     
     let encrypted_note = &mut ctx.accounts.encrypted_note;
     encrypted_note.encrypted_data = encrypted_note_data;
     encrypted_note.bump = ctx.bumps.encrypted_note;
     
-    msg!("Deposit created - Commitment: {:?}, Amount: {}, Nullifier hash: {:?}", 
-         commitment, amount, nullifier_hash);
+    msg!("Deposit created - Deposit ID: {:?}, Amount: {}, Note nonce: {:?}", 
+         deposit_id, amount, note_nonce);
     
     Ok(())
 }
