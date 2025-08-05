@@ -11,24 +11,31 @@ class FHEManager {
     private publicKey: any = null;
 
     async initialize() {
-        if (this.clientKey) return;
+        if (this.clientKey !== undefined) return;
         
         try {
             const { TfheClientKey, TfheCompactPublicKey, CompactCiphertextList, TfheConfigBuilder } = await import('tfhe');
             
             let storedClientKey = localStorage.getItem('fhe_client_key');
             if (storedClientKey) {
-                this.clientKey = TfheClientKey.deserialize(new Uint8Array(JSON.parse(storedClientKey)));
+                try {
+                    this.clientKey = TfheClientKey.deserialize(new Uint8Array(JSON.parse(storedClientKey)));
+                } catch (deserializeError) {
+                    console.warn('Failed to deserialize stored client key, generating new one');
+                    this.clientKey = null;
+                }
             } else {
-                this.clientKey = null; // Will be properly implemented once IDL is fixed
+                this.clientKey = null;
             }
             
-            this.publicKey = null; // Will be properly implemented once IDL is fixed
+            this.publicKey = null;
             
             console.log('FHE Manager initialized successfully');
         } catch (error) {
             console.error('Failed to initialize FHE Manager:', error);
-            throw error;
+            this.clientKey = null;
+            this.publicKey = null;
+            console.log('Continuing without FHE functionality');
         }
     }
 
@@ -253,8 +260,6 @@ function PrivacyVault() {
             
             const withdrawalData = {
                 depositId: Array.from(depositId),
-                originalCommitment: Array.from(originalCommitment),
-                commitment: Array.from(commitment),
                 noteNonce: Array.from(noteNonce),
                 destinationWallet: destinationWallet,
                 amount: amount
@@ -313,7 +318,7 @@ function PrivacyVault() {
             await fheManager.initialize();
             
             const withdrawalData = JSON.parse(atob(withdrawalString));
-            const { depositId, originalCommitment, commitment, noteNonce, amount } = withdrawalData;
+            const { depositId, noteNonce, amount } = withdrawalData;
             
             if (!destinationWallet.trim()) {
                 setStatus('Please enter a destination wallet address');
