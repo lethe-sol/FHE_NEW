@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, LAMPORTS_PER_SOL, Connection, SystemProgram } from '@solana/web3.js';
 import { getProgram, getVaultPDA, getVaultConfigPDA, getDepositMetadataPDA, getEncryptedNotePDA } from '../utils/anchor-setup';
 
@@ -20,7 +20,8 @@ const mockFHE = {
 };
 
 function PrivacyVault() {
-    const { publicKey, wallet } = useWallet();
+    const { publicKey } = useWallet();
+    const wallet = useAnchorWallet();
     const [withdrawalString, setWithdrawalString] = useState('');
     const [status, setStatus] = useState('');
     const [vaultInitialized, setVaultInitialized] = useState(false);
@@ -72,10 +73,6 @@ function PrivacyVault() {
     }, [publicKey]);
 
     const initializeVault = useCallback(async () => {
-        console.log('initializeVault called with:', { publicKey, wallet });
-        console.log('wallet type:', typeof wallet);
-        console.log('wallet keys:', wallet ? Object.keys(wallet) : 'wallet is null');
-        
         if (!publicKey || !wallet) {
             setStatus('Please connect your wallet');
             return;
