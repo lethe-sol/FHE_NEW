@@ -69,7 +69,7 @@ function PrivacyVault() {
                 .accounts({
                     vault: vaultPDA,
                     payer: publicKey,
-                    systemProgram: SystemProgram.programId,
+                    system_program: SystemProgram.programId,
                 })
                 .rpc();
             
@@ -138,11 +138,11 @@ function PrivacyVault() {
                     amount
                 )
                 .accounts({
-                    depositMetadata: depositMetadataPDA,
-                    encryptedNote: encryptedNotePDA,
+                    deposit_metadata: depositMetadataPDA,
+                    encrypted_note: encryptedNotePDA,
                     vault: vaultPDA,
                     depositor: publicKey,
-                    systemProgram: SystemProgram.programId,
+                    system_program: SystemProgram.programId,
                 })
                 .rpc();
             
@@ -185,12 +185,12 @@ function PrivacyVault() {
                     relayerPubkey
                 )
                 .accounts({
-                    depositMetadata: depositMetadataPDA,
-                    encryptedNote: encryptedNotePDA,
+                    deposit_metadata: depositMetadataPDA,
+                    encrypted_note: encryptedNotePDA,
                     vault: vaultPDA,
-                    destinationWallet: destinationWalletPubkey,
+                    destination_wallet: destinationWalletPubkey,
                     relayer: relayerPubkey,
-                    systemProgram: SystemProgram.programId,
+                    system_program: SystemProgram.programId,
                 })
                 .rpc();
             
