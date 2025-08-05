@@ -94,14 +94,20 @@ function PrivacyVault() {
                 .rpc();
             
             setStatus(`Vault initialized! Transaction: ${tx.substring(0, 20)}...`);
-            setVaultInitialized(true);
             
         } catch (error) {
             console.error('Vault initialization error:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
-            setStatus(`Vault initialization failed: ${errorMessage}`);
+            
+            if (errorMessage.includes('already in use') || errorMessage.includes('already exists')) {
+                setStatus('Vault already exists! Proceeding to check vault status...');
+            } else {
+                setStatus(`Vault initialization failed: ${errorMessage}`);
+            }
         }
-    }, [publicKey, wallet]);
+        
+        setTimeout(() => checkVaultInitialized(), 1000);
+    }, [publicKey, wallet, checkVaultInitialized]);
 
     const initializeVaultConfig = useCallback(async () => {
         if (!publicKey || !wallet) {
@@ -139,9 +145,16 @@ function PrivacyVault() {
         } catch (error) {
             console.error('Vault config initialization error:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
-            setStatus(`Vault config initialization failed: ${errorMessage}`);
+            
+            if (errorMessage.includes('already in use') || errorMessage.includes('already exists')) {
+                setStatus('Vault config already exists! Proceeding to check vault status...');
+            } else {
+                setStatus(`Vault config initialization failed: ${errorMessage}`);
+            }
         }
-    }, [publicKey, wallet]);
+        
+        setTimeout(() => checkVaultInitialized(), 1000);
+    }, [publicKey, wallet, checkVaultInitialized]);
     const testSimpleDeposit = useCallback(async () => {
         if (!publicKey || !wallet) {
             setStatus('Please connect your wallet');
