@@ -598,7 +598,17 @@ export const PRIVACY_VAULT_IDL: Idl = {
 };
 
 export function getProgram(connection: Connection, wallet: any) {
-  const provider = new AnchorProvider(connection, wallet, { 
+  if (!wallet || !wallet.publicKey) {
+    throw new Error('Wallet not connected');
+  }
+  
+  const anchorWallet = {
+    publicKey: wallet.publicKey,
+    signTransaction: wallet.signTransaction?.bind(wallet),
+    signAllTransactions: wallet.signAllTransactions?.bind(wallet),
+  };
+  
+  const provider = new AnchorProvider(connection, anchorWallet, { 
     commitment: 'confirmed',
     preflightCommitment: 'confirmed'
   });
