@@ -215,7 +215,8 @@ function PrivacyVault() {
             const originalCommitment = crypto.getRandomValues(new Uint8Array(32));
             const encryptedCommitment = fheManager.encryptCommitment(originalCommitment);
             
-            const commitment = encryptedCommitment.slice(0, 32);
+            const commitmentHash = await crypto.subtle.digest('SHA-256', encryptedCommitment);
+            const commitment = new Uint8Array(commitmentHash);
             const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
             const encryptedNoteData = Buffer.from(new Uint8Array([1, 2, 3, 4, 5]));
             const signature = Buffer.from(new Uint8Array(64).fill(0));
@@ -286,7 +287,8 @@ function PrivacyVault() {
             const originalCommitment = crypto.getRandomValues(new Uint8Array(32));
             const encryptedCommitment = fheManager.encryptCommitment(originalCommitment);
             
-            const commitment = encryptedCommitment.slice(0, 32);
+            const commitmentHash = await crypto.subtle.digest('SHA-256', encryptedCommitment);
+            const commitment = new Uint8Array(commitmentHash);
             const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
             
             const withdrawalData = {
