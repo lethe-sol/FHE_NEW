@@ -27,7 +27,7 @@ class FHEManager {
         } else {
             const config = TfheConfigBuilder.default().build();
             this.clientKey = TfheClientKey.generate(config);
-            this.publicKey = this.clientKey.public_key();
+            this.publicKey = TfheCompactPublicKey.new(this.clientKey);
             
             localStorage.setItem('fhe_client_key', JSON.stringify(Array.from(this.clientKey.serialize())));
             localStorage.setItem('fhe_public_key', JSON.stringify(Array.from(this.publicKey.serialize())));
