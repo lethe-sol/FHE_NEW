@@ -2,90 +2,30 @@ import { Program, AnchorProvider, web3, Idl } from '@coral-xyz/anchor';
 import { Connection, PublicKey } from '@solana/web3.js';
 
 export const PRIVACY_VAULT_IDL: Idl = {
-  "accounts": [
-    {
-      "discriminator": [
-        227,
-        5,
-        25,
-        198,
-        217,
-        128,
-        160,
-        130
-      ],
-      "name": "DepositMetadata"
-    },
-    {
-      "discriminator": [
-        85,
-        199,
-        220,
-        160,
-        205,
-        190,
-        232,
-        56
-      ],
-      "name": "EncryptedNote"
-    },
-    {
-      "discriminator": [
-        99,
-        86,
-        43,
-        216,
-        184,
-        102,
-        119,
-        77
-      ],
-      "name": "VaultConfig"
-    }
-  ],
   "address": "9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553",
-  "errors": [
-    {
-      "code": 6000,
-      "msg": "Invalid signature for deposit ID",
-      "name": "InvalidSignature"
-    },
-    {
-      "code": 6001,
-      "msg": "Deposit has already been used",
-      "name": "DepositAlreadyUsed"
-    },
-    {
-      "code": 6002,
-      "msg": "Invalid deposit ID",
-      "name": "InvalidDepositId"
-    },
-    {
-      "code": 6003,
-      "msg": "Unauthorized access",
-      "name": "Unauthorized"
-    },
-    {
-      "code": 6004,
-      "msg": "Invalid amount",
-      "name": "InvalidAmount"
-    },
-    {
-      "code": 6005,
-      "msg": "Arithmetic overflow",
-      "name": "ArithmeticOverflow"
-    },
-    {
-      "code": 6006,
-      "msg": "Encrypted note data too large",
-      "name": "NoteTooLarge"
-    }
-  ],
+  "metadata": {
+    "name": "privacy_vault",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Privacy-preserving vault with FHE support and relayer rewards"
+  },
   "instructions": [
     {
+      "name": "deposit",
+      "discriminator": [
+        242,
+        35,
+        198,
+        137,
+        82,
+        225,
+        242,
+        182
+      ],
       "accounts": [
         {
           "name": "deposit_metadata",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -105,11 +45,11 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 "path": "deposit_id"
               }
             ]
-          },
-          "writable": true
+          }
         },
         {
           "name": "encrypted_note",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -126,11 +66,11 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 "path": "note_nonce"
               }
             ]
-          },
-          "writable": true
+          }
         },
         {
           "name": "vault",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -144,17 +84,16 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 ]
               }
             ]
-          },
-          "writable": true
+          }
         },
         {
           "name": "depositor",
-          "signer": true,
-          "writable": true
+          "writable": true,
+          "signer": true
         },
         {
-          "address": "11111111111111111111111111111111",
-          "name": "system_program"
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -193,23 +132,24 @@ export const PRIVACY_VAULT_IDL: Idl = {
           "name": "amount",
           "type": "u64"
         }
-      ],
-      "discriminator": [
-        242,
-        35,
-        198,
-        137,
-        82,
-        225,
-        242,
-        182
-      ],
-      "name": "deposit"
+      ]
     },
     {
+      "name": "initialize_vault",
+      "discriminator": [
+        48,
+        191,
+        163,
+        44,
+        71,
+        129,
+        63,
+        164
+      ],
       "accounts": [
         {
           "name": "vault",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -223,36 +163,36 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 ]
               }
             ]
-          },
-          "writable": true
+          }
         },
         {
           "name": "payer",
-          "signer": true,
-          "writable": true
+          "writable": true,
+          "signer": true
         },
         {
-          "address": "11111111111111111111111111111111",
-          "name": "system_program"
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
-      "args": [],
-      "discriminator": [
-        48,
-        191,
-        163,
-        44,
-        71,
-        129,
-        63,
-        164
-      ],
-      "name": "initialize_vault"
+      "args": []
     },
     {
+      "name": "initialize_vault_config",
+      "discriminator": [
+        199,
+        95,
+        61,
+        130,
+        239,
+        178,
+        88,
+        193
+      ],
       "accounts": [
         {
           "name": "vault_config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -273,17 +213,16 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 ]
               }
             ]
-          },
-          "writable": true
+          }
         },
         {
           "name": "payer",
-          "signer": true,
-          "writable": true
+          "writable": true,
+          "signer": true
         },
         {
-          "address": "11111111111111111111111111111111",
-          "name": "system_program"
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -303,23 +242,24 @@ export const PRIVACY_VAULT_IDL: Idl = {
           "name": "reward_rate_per_second",
           "type": "u64"
         }
-      ],
-      "discriminator": [
-        199,
-        95,
-        61,
-        130,
-        239,
-        178,
-        88,
-        193
-      ],
-      "name": "initialize_vault_config"
+      ]
     },
     {
+      "name": "update_vault_config",
+      "discriminator": [
+        122,
+        3,
+        21,
+        222,
+        158,
+        255,
+        238,
+        157
+      ],
       "accounts": [
         {
           "name": "vault_config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -340,15 +280,14 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 ]
               }
             ]
-          },
-          "writable": true
+          }
         },
         {
           "name": "authority",
+          "signer": true,
           "relations": [
             "vault_config"
-          ],
-          "signer": true
+          ]
         }
       ],
       "args": [
@@ -370,23 +309,24 @@ export const PRIVACY_VAULT_IDL: Idl = {
             "option": "u64"
           }
         }
-      ],
-      "discriminator": [
-        122,
-        3,
-        21,
-        222,
-        158,
-        255,
-        238,
-        157
-      ],
-      "name": "update_vault_config"
+      ]
     },
     {
+      "name": "withdraw",
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
       "accounts": [
         {
           "name": "deposit_metadata",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -406,8 +346,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 "path": "deposit_id"
               }
             ]
-          },
-          "writable": true
+          }
         },
         {
           "name": "encrypted_note",
@@ -431,6 +370,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
         },
         {
           "name": "vault",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -444,8 +384,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 ]
               }
             ]
-          },
-          "writable": true
+          }
         },
         {
           "name": "destination_wallet",
@@ -456,8 +395,8 @@ export const PRIVACY_VAULT_IDL: Idl = {
           "writable": true
         },
         {
-          "address": "11111111111111111111111111111111",
-          "name": "system_program"
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -487,30 +426,92 @@ export const PRIVACY_VAULT_IDL: Idl = {
           "name": "relayer",
           "type": "pubkey"
         }
-      ],
-      "discriminator": [
-        183,
-        18,
-        70,
-        156,
-        148,
-        109,
-        161,
-        34
-      ],
-      "name": "withdraw"
+      ]
     }
   ],
-  "metadata": {
-    "description": "Privacy-preserving vault with FHE support and relayer rewards",
-    "name": "privacy_vault",
-    "spec": "0.1.0",
-    "version": "0.1.0"
-  },
+  "accounts": [
+    {
+      "name": "DepositMetadata",
+      "discriminator": [
+        227,
+        5,
+        25,
+        198,
+        217,
+        128,
+        160,
+        130
+      ]
+    },
+    {
+      "name": "EncryptedNote",
+      "discriminator": [
+        85,
+        199,
+        220,
+        160,
+        205,
+        190,
+        232,
+        56
+      ]
+    },
+    {
+      "name": "VaultConfig",
+      "discriminator": [
+        99,
+        86,
+        43,
+        216,
+        184,
+        102,
+        119,
+        77
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidSignature",
+      "msg": "Invalid signature for deposit ID"
+    },
+    {
+      "code": 6001,
+      "name": "DepositAlreadyUsed",
+      "msg": "Deposit has already been used"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidDepositId",
+      "msg": "Invalid deposit ID"
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Unauthorized access"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidAmount",
+      "msg": "Invalid amount"
+    },
+    {
+      "code": 6005,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6006,
+      "name": "NoteTooLarge",
+      "msg": "Encrypted note data too large"
+    }
+  ],
   "types": [
     {
       "name": "DepositMetadata",
       "type": {
+        "kind": "struct",
         "fields": [
           {
             "name": "deposit_id",
@@ -546,13 +547,13 @@ export const PRIVACY_VAULT_IDL: Idl = {
             "name": "bump",
             "type": "u8"
           }
-        ],
-        "kind": "struct"
+        ]
       }
     },
     {
       "name": "EncryptedNote",
       "type": {
+        "kind": "struct",
         "fields": [
           {
             "name": "encrypted_data",
@@ -562,13 +563,13 @@ export const PRIVACY_VAULT_IDL: Idl = {
             "name": "bump",
             "type": "u8"
           }
-        ],
-        "kind": "struct"
+        ]
       }
     },
     {
       "name": "VaultConfig",
       "type": {
+        "kind": "struct",
         "fields": [
           {
             "name": "authority",
@@ -590,8 +591,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
             "name": "bump",
             "type": "u8"
           }
-        ],
-        "kind": "struct"
+        ]
       }
     }
   ]
