@@ -21,7 +21,6 @@ pub struct Withdraw<'info> {
     )]
     pub encrypted_note: Account<'info, EncryptedNote>,
     
-    
     #[account(
         mut,
         seeds = [b"vault"],
