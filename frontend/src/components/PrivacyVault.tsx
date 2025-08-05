@@ -169,8 +169,8 @@ function PrivacyVault() {
             
             const depositId = new Uint8Array(32).fill(1);
             const noteNonce = new Uint8Array(32).fill(2);
-            const encryptedNoteData = Array.from(new Uint8Array([1, 2, 3, 4, 5])); // Simple test data
-            const signature = Array.from(new Uint8Array(64).fill(0));
+            const encryptedNoteData = Buffer.from(new Uint8Array([1, 2, 3, 4, 5])); // Simple test data
+            const signature = Buffer.from(new Uint8Array(64).fill(0));
             const amount = 100000000; // 0.1 SOL in lamports
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
@@ -189,8 +189,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .deposit(
-                    Array.from(depositId),
-                    Array.from(noteNonce),
+                    Buffer.from(depositId),
+                    Buffer.from(noteNonce),
                     encryptedNoteData,
                     signature,
                     amount
@@ -241,8 +241,8 @@ function PrivacyVault() {
             const depositId = hashData(combinedData);
             
             const withdrawalData = {
-                depositId: Array.from(depositId),
-                noteNonce: Array.from(noteNonce),
+                depositId: Buffer.from(depositId),
+                noteNonce: Buffer.from(noteNonce),
                 destinationWallet: destinationWallet,
                 amount: amount
             };
@@ -253,20 +253,20 @@ function PrivacyVault() {
             const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
             const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
             
-            const encryptedNoteData = Array.from(new TextEncoder().encode(JSON.stringify({
+            const encryptedNoteData = Buffer.from(new TextEncoder().encode(JSON.stringify({
                 destinationWallet: destinationWallet,
                 amount: amount,
                 timestamp: Date.now()
             })));
             
-            const signature = Array.from(new Uint8Array(64));
+            const signature = Buffer.from(new Uint8Array(64));
             
             setStatus('Sending transaction...');
             
             const tx = await program.methods
                 .deposit(
-                    Array.from(depositId),
-                    Array.from(noteNonce),
+                    Buffer.from(depositId),
+                    Buffer.from(noteNonce),
                     encryptedNoteData,
                     signature,
                     amount
@@ -313,8 +313,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .withdraw(
-                    Array.isArray(depositId) ? depositId : Array.from(depositId),
-                    Array.isArray(noteNonce) ? noteNonce : Array.from(noteNonce),
+                    Array.isArray(depositId) ? depositId : Buffer.from(depositId),
+                    Array.isArray(noteNonce) ? noteNonce : Buffer.from(noteNonce),
                     destinationWalletPubkey,
                     relayerPubkey
                 )
