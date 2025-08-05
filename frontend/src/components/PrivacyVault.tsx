@@ -244,8 +244,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .withdraw(
-                    depositId instanceof Array ? new Uint8Array(depositId) : depositId,
-                    noteNonce instanceof Array ? new Uint8Array(noteNonce) : noteNonce,
+                    Array.isArray(depositId) ? depositId : Array.from(depositId),
+                    Array.isArray(noteNonce) ? noteNonce : Array.from(noteNonce),
                     destinationWalletPubkey,
                     relayerPubkey
                 )
