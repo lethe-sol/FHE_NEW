@@ -102,7 +102,7 @@ function PrivacyVault() {
             
             const depositId = new Uint8Array(32).fill(1);
             const noteNonce = new Uint8Array(32).fill(2);
-            const encryptedNoteData = new Uint8Array([1, 2, 3, 4, 5]); // Simple test data
+            const encryptedNoteData = Array.from(new Uint8Array([1, 2, 3, 4, 5])); // Simple test data
             const signature = Array.from(new Uint8Array(64).fill(0));
             const amount = 100000000; // 0.1 SOL in lamports
             
@@ -186,11 +186,11 @@ function PrivacyVault() {
             const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
             const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
             
-            const encryptedNoteData = new TextEncoder().encode(JSON.stringify({
+            const encryptedNoteData = Array.from(new TextEncoder().encode(JSON.stringify({
                 destinationWallet: destinationWallet,
                 amount: amount,
                 timestamp: Date.now()
-            }));
+            })));
             
             const signature = Array.from(new Uint8Array(64));
             
