@@ -222,7 +222,9 @@ function PrivacyVault() {
             const signature = Buffer.from(new Uint8Array(64).fill(0));
             const amount = 100000000;
             
-            const vaultConfig = await program.account.VaultConfig.fetch(getVaultConfigPDA(PROGRAM_ID)[0]);
+            const vaultConfigAccount = await program.provider.connection.getAccountInfo(getVaultConfigPDA(PROGRAM_ID)[0]);
+            if (!vaultConfigAccount) throw new Error('Vault config not found');
+            const vaultConfig = program.coder.accounts.decode('VaultConfig', vaultConfigAccount.data);
             const nextDepositId = vaultConfig.nextDepositId.toNumber();
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
@@ -295,7 +297,9 @@ function PrivacyVault() {
             const commitment = new Uint8Array(commitmentHash);
             const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
             
-            const vaultConfig = await program.account.VaultConfig.fetch(getVaultConfigPDA(PROGRAM_ID)[0]);
+            const vaultConfigAccount = await program.provider.connection.getAccountInfo(getVaultConfigPDA(PROGRAM_ID)[0]);
+            if (!vaultConfigAccount) throw new Error('Vault config not found');
+            const vaultConfig = program.coder.accounts.decode('VaultConfig', vaultConfigAccount.data);
             const nextDepositId = vaultConfig.nextDepositId.toNumber();
             
             const withdrawalData = {
