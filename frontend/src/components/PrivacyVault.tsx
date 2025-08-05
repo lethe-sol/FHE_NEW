@@ -20,7 +20,9 @@ class FHEManager {
             if (storedClientKey) {
                 this.clientKey = TfheClientKey.deserialize(new Uint8Array(JSON.parse(storedClientKey)));
             } else {
-                this.clientKey = TfheClientKey.generate();
+                this.clientKey = TfheClientKey.generate_with_parameters(
+                    await import('tfhe').then(m => m.TfheConfigBuilder.default().build())
+                );
                 localStorage.setItem('fhe_client_key', JSON.stringify(Array.from(this.clientKey.serialize())));
             }
             
