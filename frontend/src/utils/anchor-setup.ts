@@ -42,7 +42,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
               },
               {
                 "kind": "arg",
-                "path": "deposit_id"
+                "path": "commitment"
               }
             ]
           }
@@ -63,7 +63,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
               },
               {
                 "kind": "arg",
-                "path": "note_nonce"
+                "path": "nullifier_hash"
               }
             ]
           }
@@ -98,7 +98,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
       ],
       "args": [
         {
-          "name": "deposit_id",
+          "name": "commitment",
           "type": {
             "array": [
               "u8",
@@ -107,7 +107,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
           }
         },
         {
-          "name": "note_nonce",
+          "name": "nullifier_hash",
           "type": {
             "array": [
               "u8",
@@ -343,7 +343,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
               },
               {
                 "kind": "arg",
-                "path": "deposit_id"
+                "path": "commitment"
               }
             ]
           }
@@ -363,7 +363,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
               },
               {
                 "kind": "arg",
-                "path": "note_nonce"
+                "path": "nullifier_hash"
               }
             ]
           }
@@ -401,7 +401,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
       ],
       "args": [
         {
-          "name": "deposit_id",
+          "name": "commitment",
           "type": {
             "array": [
               "u8",
@@ -410,7 +410,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
           }
         },
         {
-          "name": "note_nonce",
+          "name": "nullifier_hash",
           "type": {
             "array": [
               "u8",
@@ -483,8 +483,8 @@ export const PRIVACY_VAULT_IDL: Idl = {
     },
     {
       "code": 6002,
-      "name": "InvalidDepositId",
-      "msg": "Invalid deposit ID"
+      "name": "InvalidCommitment",
+      "msg": "Invalid commitment"
     },
     {
       "code": 6003,
@@ -514,7 +514,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
         "kind": "struct",
         "fields": [
           {
-            "name": "deposit_id",
+            "name": "commitment",
             "type": {
               "array": [
                 "u8",
@@ -535,7 +535,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
             "type": "bool"
           },
           {
-            "name": "note_nonce",
+            "name": "nullifier_hash",
             "type": {
               "array": [
                 "u8",
@@ -623,18 +623,18 @@ export function getVaultConfigPDA(programId: PublicKey) {
   );
 }
 
-export function getDepositMetadataPDA(depositId: Uint8Array | number[], programId: PublicKey) {
-  const depositIdBytes = depositId instanceof Uint8Array ? depositId : new Uint8Array(depositId);
+export function getDepositMetadataPDA(commitment: Uint8Array | number[], programId: PublicKey) {
+  const commitmentBytes = commitment instanceof Uint8Array ? commitment : new Uint8Array(commitment);
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("deposit"), Buffer.from(depositIdBytes)],
+    [Buffer.from("deposit"), Buffer.from(commitmentBytes)],
     programId
   );
 }
 
-export function getEncryptedNotePDA(noteNonce: Uint8Array | number[], programId: PublicKey) {
-  const noteNonceBytes = noteNonce instanceof Uint8Array ? noteNonce : new Uint8Array(noteNonce);
+export function getEncryptedNotePDA(nullifierHash: Uint8Array | number[], programId: PublicKey) {
+  const nullifierHashBytes = nullifierHash instanceof Uint8Array ? nullifierHash : new Uint8Array(nullifierHash);
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("note"), Buffer.from(noteNonceBytes)],
+    [Buffer.from("note"), Buffer.from(nullifierHashBytes)],
     programId
   );
 }

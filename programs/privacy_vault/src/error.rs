@@ -2,12 +2,12 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum ErrorCode {
-    #[msg("Invalid signature for deposit ID")]
+    #[msg("Invalid signature for commitment")]
     InvalidSignature,
     #[msg("Deposit has already been used")]
     DepositAlreadyUsed,
-    #[msg("Invalid deposit ID")]
-    InvalidDepositId,
+    #[msg("Invalid commitment")]
+    InvalidCommitment,
     #[msg("Unauthorized access")]
     Unauthorized,
     #[msg("Invalid amount")]

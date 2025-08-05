@@ -168,19 +168,19 @@ function PrivacyVault() {
             
             const program = getProgram(connection, wallet);
             
-            const depositId = new Uint8Array(32).fill(1);
-            const noteNonce = new Uint8Array(32).fill(2);
+            const commitment = crypto.getRandomValues(new Uint8Array(32));
+            const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
             const encryptedNoteData = Buffer.from(new Uint8Array([1, 2, 3, 4, 5])); // Simple test data
             const signature = Buffer.from(new Uint8Array(64).fill(0));
             const amount = 100000000; // 0.1 SOL in lamports
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
-            const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(commitment, PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(nullifierHash, PROGRAM_ID);
             
             console.log('Test values:', {
-                depositId: depositId.length,
-                noteNonce: noteNonce.length,
+                commitment: commitment.length,
+                nullifierHash: nullifierHash.length,
                 encryptedNoteData: encryptedNoteData.length,
                 signature: signature.length,
                 amount
@@ -190,8 +190,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .deposit(
-                    Buffer.from(depositId),
-                    Buffer.from(noteNonce),
+                    Buffer.from(commitment),
+                    Buffer.from(nullifierHash),
                     encryptedNoteData,
                     signature,
                     new anchor.BN(amount)
@@ -234,16 +234,12 @@ function PrivacyVault() {
             const amount = 100000000; // 0.1 SOL in lamports
             const destinationWallet = publicKey.toString(); // Same as depositor
             
-            const noteNonce = generateRandomNonce();
-            const combinedData = new Uint8Array([
-                ...publicKey.toBytes(),
-                ...noteNonce
-            ]);
-            const depositId = hashData(combinedData);
+            const commitment = crypto.getRandomValues(new Uint8Array(32));
+            const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
             
             const withdrawalData = {
-                depositId: Array.from(depositId),
-                noteNonce: Array.from(noteNonce),
+                commitment: Array.from(commitment),
+                nullifierHash: Array.from(nullifierHash),
                 destinationWallet: destinationWallet,
                 amount: amount
             };
@@ -251,8 +247,8 @@ function PrivacyVault() {
             setWithdrawalString(withdrawalString);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
-            const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(commitment, PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(nullifierHash, PROGRAM_ID);
             
             const encryptedNoteData = Buffer.from(new TextEncoder().encode(JSON.stringify({
                 destinationWallet: destinationWallet,
@@ -266,8 +262,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .deposit(
-                    Buffer.from(depositId),
-                    Buffer.from(noteNonce),
+                    Buffer.from(commitment),
+                    Buffer.from(nullifierHash),
                     encryptedNoteData,
                     signature,
                     new anchor.BN(amount)
@@ -299,7 +295,7 @@ function PrivacyVault() {
             setStatus('Processing withdrawal...');
             
             const withdrawalData = JSON.parse(atob(withdrawalString));
-            const { depositId, noteNonce, amount } = withdrawalData;
+            const { commitment, nullifierHash, amount } = withdrawalData;
             
             if (!destinationWallet.trim()) {
                 setStatus('Please enter a destination wallet address');
@@ -309,8 +305,8 @@ function PrivacyVault() {
             const program = getProgram(connection, wallet);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(new Uint8Array(depositId), PROGRAM_ID);
-            const [encryptedNotePDA] = getEncryptedNotePDA(new Uint8Array(noteNonce), PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(new Uint8Array(commitment), PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(new Uint8Array(nullifierHash), PROGRAM_ID);
             
             const destinationWalletPubkey = new PublicKey(destinationWallet.trim());
             const relayerPubkey = publicKey;
@@ -319,8 +315,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .withdraw(
-                    Buffer.from(new Uint8Array(depositId)),
-                    Buffer.from(new Uint8Array(noteNonce)),
+                    Buffer.from(new Uint8Array(commitment)),
+                    Buffer.from(new Uint8Array(nullifierHash)),
                     destinationWalletPubkey,
                     relayerPubkey
                 )

@@ -3,20 +3,20 @@ use crate::state::*;
 use crate::error::ErrorCode as VaultErrorCode;
 
 #[derive(Accounts)]
-#[instruction(deposit_id: [u8; 32], note_nonce: [u8; 32])]
+#[instruction(commitment: [u8; 32], nullifier_hash: [u8; 32])]
 pub struct Withdraw<'info> {
     #[account(
         mut,
-        seeds = [b"deposit", deposit_id.as_ref()],
+        seeds = [b"deposit", commitment.as_ref()],
         bump = deposit_metadata.bump,
         constraint = !deposit_metadata.used @ VaultErrorCode::DepositAlreadyUsed,
-        constraint = deposit_metadata.deposit_id == deposit_id @ VaultErrorCode::InvalidDepositId,
-        constraint = deposit_metadata.note_nonce == note_nonce @ VaultErrorCode::InvalidDepositId
+        constraint = deposit_metadata.commitment == commitment @ VaultErrorCode::InvalidCommitment,
+        constraint = deposit_metadata.nullifier_hash == nullifier_hash @ VaultErrorCode::InvalidCommitment
     )]
     pub deposit_metadata: Account<'info, DepositMetadata>,
     
     #[account(
-        seeds = [b"note", note_nonce.as_ref()],
+        seeds = [b"note", nullifier_hash.as_ref()],
         bump = encrypted_note.bump
     )]
     pub encrypted_note: Account<'info, EncryptedNote>,
@@ -42,8 +42,8 @@ pub struct Withdraw<'info> {
 
 pub fn withdraw(
     ctx: Context<Withdraw>,
-    _deposit_id: [u8; 32],
-    _note_nonce: [u8; 32],
+    _commitment: [u8; 32],
+    _nullifier_hash: [u8; 32],
     _destination_wallet: Pubkey,
     _relayer: Pubkey,
 ) -> Result<()> {

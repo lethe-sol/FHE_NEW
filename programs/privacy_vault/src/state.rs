@@ -2,11 +2,11 @@ use anchor_lang::prelude::*;
 
 #[account]
 pub struct DepositMetadata {
-    pub deposit_id: [u8; 32],
+    pub commitment: [u8; 32],
     pub amount: u64,
     pub timestamp: i64,
     pub used: bool,
-    pub note_nonce: [u8; 32],
+    pub nullifier_hash: [u8; 32],
     pub bump: u8,
 }
 

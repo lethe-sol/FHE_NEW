@@ -4,13 +4,13 @@ use crate::state::*;
 use crate::error::ErrorCode as VaultErrorCode;
 
 #[derive(Accounts)]
-#[instruction(deposit_id: [u8; 32], note_nonce: [u8; 32])]
+#[instruction(commitment: [u8; 32], nullifier_hash: [u8; 32])]
 pub struct Deposit<'info> {
     #[account(
         init,
         payer = depositor,
         space = DepositMetadata::LEN,
-        seeds = [b"deposit", deposit_id.as_ref()],
+        seeds = [b"deposit", commitment.as_ref()],
         bump
     )]
     pub deposit_metadata: Account<'info, DepositMetadata>,
@@ -19,7 +19,7 @@ pub struct Deposit<'info> {
         init,
         payer = depositor,
         space = EncryptedNote::MAX_SIZE,
-        seeds = [b"note", note_nonce.as_ref()],
+        seeds = [b"note", nullifier_hash.as_ref()],
         bump
     )]
     pub encrypted_note: Account<'info, EncryptedNote>,
@@ -40,8 +40,8 @@ pub struct Deposit<'info> {
 
 pub fn deposit(
     ctx: Context<Deposit>,
-    deposit_id: [u8; 32],
-    note_nonce: [u8; 32],
+    commitment: [u8; 32],
+    nullifier_hash: [u8; 32],
     encrypted_note_data: Vec<u8>,
     signature: [u8; 64],
     amount: u64,
@@ -50,7 +50,7 @@ pub fn deposit(
     require!(encrypted_note_data.len() <= 1024, VaultErrorCode::NoteTooLarge);
     
     require!(signature.len() == 64, VaultErrorCode::InvalidSignature);
-    msg!("Signature verified for deposit ID: {:?}", deposit_id);
+    msg!("Signature verified for commitment: {:?}", commitment);
     
     system_program::transfer(
         CpiContext::new(
@@ -64,19 +64,19 @@ pub fn deposit(
     )?;
     
     let deposit_metadata = &mut ctx.accounts.deposit_metadata;
-    deposit_metadata.deposit_id = deposit_id;
+    deposit_metadata.commitment = commitment;
     deposit_metadata.amount = amount;
     deposit_metadata.timestamp = Clock::get()?.unix_timestamp;
     deposit_metadata.used = false;
-    deposit_metadata.note_nonce = note_nonce;
+    deposit_metadata.nullifier_hash = nullifier_hash;
     deposit_metadata.bump = ctx.bumps.deposit_metadata;
     
     let encrypted_note = &mut ctx.accounts.encrypted_note;
     encrypted_note.encrypted_data = encrypted_note_data;
     encrypted_note.bump = ctx.bumps.encrypted_note;
     
-    msg!("Deposit created - ID: {:?}, Amount: {}, Note stored at nonce: {:?}", 
-         deposit_id, amount, note_nonce);
+    msg!("Deposit created - Commitment: {:?}, Amount: {}, Nullifier hash: {:?}", 
+         commitment, amount, nullifier_hash);
     
     Ok(())
 }
