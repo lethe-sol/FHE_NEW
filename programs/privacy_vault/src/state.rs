@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 #[account]
 pub struct DepositMetadata {
+    pub deposit_id: u64,
     pub commitment: [u8; 32],
     pub amount: u64,
     pub timestamp: i64,
@@ -11,7 +12,7 @@ pub struct DepositMetadata {
 }
 
 impl DepositMetadata {
-    pub const LEN: usize = 8 + 32 + 8 + 8 + 1 + 32 + 1;
+    pub const LEN: usize = 8 + 8 + 32 + 8 + 8 + 1 + 32 + 1;
 }
 
 #[account]
@@ -30,9 +31,10 @@ pub struct VaultConfig {
     pub reward_mint: Pubkey,
     pub reward_token_vault: Pubkey,
     pub reward_rate_per_second: u64,
+    pub next_deposit_id: u64,
     pub bump: u8,
 }
 
 impl VaultConfig {
-    pub const LEN: usize = 8 + 32 + 32 + 32 + 8 + 1;
+    pub const LEN: usize = 8 + 32 + 32 + 32 + 8 + 8 + 1;
 }

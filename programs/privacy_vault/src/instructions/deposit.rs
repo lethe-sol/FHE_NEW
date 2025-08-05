@@ -10,7 +10,7 @@ pub struct Deposit<'info> {
         init,
         payer = depositor,
         space = DepositMetadata::LEN,
-        seeds = [b"deposit", commitment.as_ref()],
+        seeds = [b"deposit", vault_config.next_deposit_id.to_le_bytes().as_ref()],
         bump
     )]
     pub deposit_metadata: Account<'info, DepositMetadata>,
@@ -23,6 +23,13 @@ pub struct Deposit<'info> {
         bump
     )]
     pub encrypted_note: Account<'info, EncryptedNote>,
+    
+    #[account(
+        mut,
+        seeds = [b"vault_config"],
+        bump = vault_config.bump
+    )]
+    pub vault_config: Account<'info, VaultConfig>,
     
     /// CHECK: This account is safe because it's a PDA validated by seeds and bump, no additional type checks needed
     #[account(
@@ -64,12 +71,17 @@ pub fn deposit(
     )?;
     
     let deposit_metadata = &mut ctx.accounts.deposit_metadata;
+    deposit_metadata.deposit_id = ctx.accounts.vault_config.next_deposit_id;
     deposit_metadata.commitment = commitment;
     deposit_metadata.amount = amount;
     deposit_metadata.timestamp = Clock::get()?.unix_timestamp;
     deposit_metadata.used = false;
     deposit_metadata.nullifier_hash = nullifier_hash;
     deposit_metadata.bump = ctx.bumps.deposit_metadata;
+    
+    ctx.accounts.vault_config.next_deposit_id = ctx.accounts.vault_config.next_deposit_id
+        .checked_add(1)
+        .ok_or(VaultErrorCode::ArithmeticOverflow)?;
     
     let encrypted_note = &mut ctx.accounts.encrypted_note;
     encrypted_note.encrypted_data = encrypted_note_data;

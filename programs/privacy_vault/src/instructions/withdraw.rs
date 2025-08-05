@@ -3,11 +3,11 @@ use crate::state::*;
 use crate::error::ErrorCode as VaultErrorCode;
 
 #[derive(Accounts)]
-#[instruction(commitment: [u8; 32], nullifier_hash: [u8; 32])]
+#[instruction(deposit_id: u64, commitment: [u8; 32], nullifier_hash: [u8; 32])]
 pub struct Withdraw<'info> {
     #[account(
         mut,
-        seeds = [b"deposit", commitment.as_ref()],
+        seeds = [b"deposit", deposit_id.to_le_bytes().as_ref()],
         bump = deposit_metadata.bump,
         constraint = !deposit_metadata.used @ VaultErrorCode::DepositAlreadyUsed,
         constraint = deposit_metadata.commitment == commitment @ VaultErrorCode::InvalidCommitment,
@@ -42,6 +42,7 @@ pub struct Withdraw<'info> {
 
 pub fn withdraw(
     ctx: Context<Withdraw>,
+    _deposit_id: u64,
     _commitment: [u8; 32],
     _nullifier_hash: [u8; 32],
     _destination_wallet: Pubkey,

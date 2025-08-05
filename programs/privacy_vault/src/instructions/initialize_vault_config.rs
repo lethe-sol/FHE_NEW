@@ -31,6 +31,7 @@ pub fn initialize_vault_config(
     vault_config.reward_mint = reward_mint;
     vault_config.reward_token_vault = reward_token_vault;
     vault_config.reward_rate_per_second = reward_rate_per_second;
+    vault_config.next_deposit_id = 0;
     vault_config.bump = ctx.bumps.vault_config;
     
     msg!("Vault config initialized with authority: {}", authority);

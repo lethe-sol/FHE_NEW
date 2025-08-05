@@ -59,6 +59,7 @@ pub mod privacy_vault {
 
     pub fn withdraw(
         ctx: Context<Withdraw>,
+        deposit_id: u64,
         commitment: [u8; 32],
         nullifier_hash: [u8; 32],
         destination_wallet: Pubkey,
@@ -66,6 +67,7 @@ pub mod privacy_vault {
     ) -> Result<()> {
         instructions::withdraw(
             ctx,
+            deposit_id,
             commitment,
             nullifier_hash,
             destination_wallet,
