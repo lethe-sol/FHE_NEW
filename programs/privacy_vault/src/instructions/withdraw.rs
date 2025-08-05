@@ -28,10 +28,10 @@ pub struct Withdraw<'info> {
         bump
     )]
     pub vault: AccountInfo<'info>,
-    
+
     #[account(mut)]
     pub destination_wallet: AccountInfo<'info>,
-    
+
     #[account(mut)]
     pub relayer: AccountInfo<'info>,
     
