@@ -24,6 +24,7 @@ function PrivacyVault() {
     const { publicKey } = useWallet();
     const wallet = useAnchorWallet();
     const [withdrawalString, setWithdrawalString] = useState('');
+    const [destinationWallet, setDestinationWallet] = useState('');
     const [status, setStatus] = useState('');
     const [vaultInitialized, setVaultInitialized] = useState(false);
 
@@ -298,7 +299,12 @@ function PrivacyVault() {
             setStatus('Processing withdrawal...');
             
             const withdrawalData = JSON.parse(atob(withdrawalString));
-            const { depositId, noteNonce, destinationWallet: destWallet, amount } = withdrawalData;
+            const { depositId, noteNonce, amount } = withdrawalData;
+            
+            if (!destinationWallet.trim()) {
+                setStatus('Please enter a destination wallet address');
+                return;
+            }
             
             const program = getProgram(connection, wallet);
             
@@ -306,7 +312,7 @@ function PrivacyVault() {
             const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
             const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
             
-            const destinationWalletPubkey = new PublicKey(destWallet);
+            const destinationWalletPubkey = new PublicKey(destinationWallet.trim());
             const relayerPubkey = publicKey;
             
             setStatus('Sending withdrawal transaction...');
@@ -328,13 +334,13 @@ function PrivacyVault() {
                 })
                 .rpc();
             
-            setStatus(`Withdrawal successful! Transaction: ${tx.substring(0, 20)}... Funds sent to ${destWallet.substring(0, 20)}...`);
+            setStatus(`Withdrawal successful! Transaction: ${tx.substring(0, 20)}... Funds sent to ${destinationWallet.substring(0, 20)}...`);
             
         } catch (error) {
             console.error('Withdrawal error:', error);
             setStatus(`Withdrawal failed: ${error instanceof Error ? error.message : String(error)}`);
         }
-    }, [publicKey, withdrawalString, wallet]);
+    }, [publicKey, withdrawalString, destinationWallet, wallet]);
 
     React.useEffect(() => {
         if (publicKey) {
@@ -383,7 +389,17 @@ function PrivacyVault() {
                         style={{ width: '400px', height: '100px' }}
                     />
                 </div>
-                <button onClick={handleWithdraw} disabled={!withdrawalString}>
+                <div style={{ marginBottom: '10px' }}>
+                    <label>Destination Wallet Address: </label>
+                    <input
+                        type="text"
+                        value={destinationWallet}
+                        onChange={(e) => setDestinationWallet(e.target.value)}
+                        placeholder="Enter destination wallet public key"
+                        style={{ width: '400px', padding: '8px' }}
+                    />
+                </div>
+                <button onClick={handleWithdraw} disabled={!withdrawalString || !destinationWallet.trim()}>
                     Process Withdrawal
                 </button>
             </div>
