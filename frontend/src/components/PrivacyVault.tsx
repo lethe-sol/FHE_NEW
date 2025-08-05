@@ -193,7 +193,7 @@ function PrivacyVault() {
                     Buffer.from(noteNonce),
                     encryptedNoteData,
                     signature,
-                    amount
+                    new anchor.BN(amount)
                 )
                 .accounts({
                     deposit_metadata: depositMetadataPDA,
@@ -269,7 +269,7 @@ function PrivacyVault() {
                     Buffer.from(noteNonce),
                     encryptedNoteData,
                     signature,
-                    amount
+                    new anchor.BN(amount)
                 )
                 .accounts({
                     deposit_metadata: depositMetadataPDA,
