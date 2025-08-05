@@ -3,11 +3,11 @@
   "outputDirectory": "build",
   "framework": "create-react-app",
   "env": {
-    "REACT_APP_RPC_URL": "@rpc_url"
+    "REACT_APP_RPC_URL": "https://api.devnet.solana.com"
   },
   "build": {
     "env": {
-      "REACT_APP_RPC_URL": "@rpc_url"
+      "REACT_APP_RPC_URL": "https://api.devnet.solana.com"
     }
   }
 }
