@@ -20,7 +20,7 @@ const mockFHE = {
 };
 
 function PrivacyVault() {
-    const { publicKey, signTransaction } = useWallet();
+    const { publicKey, wallet } = useWallet();
     const [depositAmount, setDepositAmount] = useState('');
     const [destinationWallet, setDestinationWallet] = useState('');
     const [withdrawalString, setWithdrawalString] = useState('');
@@ -61,7 +61,7 @@ function PrivacyVault() {
     }, [publicKey]);
 
     const initializeVault = useCallback(async () => {
-        if (!publicKey || !window.solana) {
+        if (!publicKey || !wallet) {
             setStatus('Please connect your wallet');
             return;
         }
@@ -69,7 +69,7 @@ function PrivacyVault() {
         try {
             setStatus('Initializing vault...');
             
-            const program = getProgram(connection, window.solana);
+            const program = getProgram(connection, wallet);
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
             
             const tx = await program.methods
@@ -86,11 +86,12 @@ function PrivacyVault() {
             
         } catch (error) {
             console.error('Vault initialization error:', error);
-            setStatus(`Vault initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            setStatus(`Vault initialization failed: ${errorMessage}`);
         }
     }, [publicKey]);
     const testSimpleDeposit = useCallback(async () => {
-        if (!publicKey || !window.solana) {
+        if (!publicKey || !wallet) {
             setStatus('Please connect your wallet');
             return;
         }
@@ -98,7 +99,7 @@ function PrivacyVault() {
         try {
             setStatus('Testing simple deposit with hardcoded values...');
             
-            const program = getProgram(connection, window.solana);
+            const program = getProgram(connection, wallet);
             
             const depositId = new Uint8Array(32).fill(1);
             const noteNonce = new Uint8Array(32).fill(2);
@@ -148,7 +149,7 @@ function PrivacyVault() {
 
 
     const handleSimpleDeposit = useCallback(async () => {
-        if (!publicKey || !window.solana) {
+        if (!publicKey || !wallet) {
             setStatus('Please connect your wallet');
             return;
         }
@@ -161,7 +162,7 @@ function PrivacyVault() {
         try {
             setStatus('Creating simple 0.1 SOL deposit...');
             
-            const program = getProgram(connection, window.solana);
+            const program = getProgram(connection, wallet);
             
             const amount = 100000000; // 0.1 SOL in lamports
             const destinationWallet = publicKey.toString(); // Same as depositor
@@ -222,7 +223,7 @@ function PrivacyVault() {
     }, [publicKey, vaultInitialized]);
 
     const handleWithdraw = useCallback(async () => {
-        if (!publicKey || !window.solana) {
+        if (!publicKey || !wallet) {
             setStatus('Please connect your wallet');
             return;
         }
@@ -233,7 +234,7 @@ function PrivacyVault() {
             const withdrawalData = JSON.parse(atob(withdrawalString));
             const { depositId, noteNonce, destinationWallet: destWallet, amount } = withdrawalData;
             
-            const program = getProgram(connection, window.solana);
+            const program = getProgram(connection, wallet);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
             const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
