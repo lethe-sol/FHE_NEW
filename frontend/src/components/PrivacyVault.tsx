@@ -147,7 +147,7 @@ function PrivacyVault() {
 
 
 
-    const handleDeposit = useCallback(async () => {
+    const handleSimpleDeposit = useCallback(async () => {
         if (!publicKey || !window.solana) {
             setStatus('Please connect your wallet');
             return;
@@ -159,10 +159,12 @@ function PrivacyVault() {
         }
 
         try {
-            setStatus('Creating deposit...');
+            setStatus('Creating simple 0.1 SOL deposit...');
             
             const program = getProgram(connection, window.solana, PROGRAM_ID);
-            const amount = Math.floor(parseFloat(depositAmount) * LAMPORTS_PER_SOL);
+            
+            const amount = 100000000; // 0.1 SOL in lamports
+            const destinationWallet = publicKey.toString(); // Same as depositor
             
             const noteNonce = generateRandomNonce();
             const combinedData = new Uint8Array([
@@ -174,7 +176,7 @@ function PrivacyVault() {
             const withdrawalData = {
                 depositId: Array.from(depositId),
                 noteNonce: Array.from(noteNonce),
-                destinationWallet: destinationWallet || publicKey.toString(),
+                destinationWallet: destinationWallet,
                 amount: amount
             };
             const withdrawalString = btoa(JSON.stringify(withdrawalData));
@@ -185,7 +187,7 @@ function PrivacyVault() {
             const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
             
             const encryptedNoteData = new TextEncoder().encode(JSON.stringify({
-                destinationWallet: destinationWallet || publicKey.toString(),
+                destinationWallet: destinationWallet,
                 amount: amount,
                 timestamp: Date.now()
             }));
@@ -211,13 +213,13 @@ function PrivacyVault() {
                 })
                 .rpc();
             
-            setStatus(`Deposit successful! Transaction: ${tx.substring(0, 20)}... Save this withdrawal string: ${withdrawalString.substring(0, 50)}...`);
+            setStatus(`Simple deposit successful! Transaction: ${tx.substring(0, 20)}... Save this withdrawal string: ${withdrawalString.substring(0, 50)}...`);
             
         } catch (error) {
-            console.error('Deposit error:', error);
-            setStatus(`Deposit failed: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('Simple deposit error:', error);
+            setStatus(`Simple deposit failed: ${error instanceof Error ? error.message : String(error)}`);
         }
-    }, [publicKey, depositAmount, destinationWallet, vaultInitialized]);
+    }, [publicKey, vaultInitialized]);
 
     const handleWithdraw = useCallback(async () => {
         if (!publicKey || !window.solana) {
@@ -288,32 +290,15 @@ function PrivacyVault() {
             )}
             
             <div style={{ marginBottom: '30px' }}>
-                <h3>Deposit SOL</h3>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Amount (SOL): </label>
-                    <input
-                        type="number"
-                        step="0.01"
-                        value={depositAmount}
-                        onChange={(e) => setDepositAmount(e.target.value)}
-                        placeholder="0.1"
-                    />
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Destination Wallet (optional): </label>
-                    <input
-                        type="text"
-                        value={destinationWallet}
-                        onChange={(e) => setDestinationWallet(e.target.value)}
-                        placeholder="Leave empty to use current wallet"
-                        style={{ width: '400px' }}
-                    />
-                </div>
-                <button onClick={handleDeposit} disabled={!depositAmount || !vaultInitialized}>
-                    Create Deposit
+                <h3>Simple Deposit Test (0.1 SOL)</h3>
+                <p style={{ color: '#666', marginBottom: '15px' }}>
+                    Hardcoded 0.1 SOL deposit to same wallet for clean testing
+                </p>
+                <button onClick={handleSimpleDeposit} disabled={!vaultInitialized} style={{ backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', padding: '15px 30px', fontSize: '16px' }}>
+                    Create Simple Deposit (0.1 SOL)
                 </button>
-                <button onClick={testSimpleDeposit} disabled={!vaultInitialized} style={{ marginLeft: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', padding: '10px 20px' }}>
-                    Test Simple Deposit
+                <button onClick={testSimpleDeposit} disabled={!vaultInitialized} style={{ marginLeft: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', padding: '15px 30px', fontSize: '16px' }}>
+                    Test Hardcoded Deposit
                 </button>
             </div>
 
@@ -351,12 +336,12 @@ function PrivacyVault() {
             </div>
 
             <div style={{ marginTop: '20px', fontSize: '12px', color: '#666' }}>
-                <h4>How it works:</h4>
+                <h4>Simple Testing Mode:</h4>
                 <ul>
-                    <li>Deposit: Creates encrypted note with withdrawal instructions, generates unlinkable deposit ID</li>
-                    <li>Withdrawal: Uses the withdrawal string to access your funds at any fresh wallet</li>
-                    <li>Privacy: On-chain observers cannot link deposits to withdrawals</li>
-                    <li>Relayer Fee: 0.5% fee is deducted for withdrawal processing</li>
+                    <li><strong>Amount:</strong> Fixed at 0.1 SOL for consistent testing</li>
+                    <li><strong>Recipient:</strong> Same as depositor wallet (no complexity)</li>
+                    <li><strong>Goal:</strong> Get basic deposit/withdrawal working first</li>
+                    <li><strong>Next:</strong> Add FHE logic once transactions work</li>
                 </ul>
                 <p><strong>Program ID:</strong> {PROGRAM_ID.toString()}</p>
                 <p><strong>Vault Status:</strong> {vaultInitialized ? '✅ Initialized' : '❌ Not Initialized'}</p>
