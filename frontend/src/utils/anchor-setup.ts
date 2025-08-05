@@ -616,16 +616,18 @@ export function getVaultConfigPDA(programId: PublicKey) {
   );
 }
 
-export function getDepositMetadataPDA(depositId: number[], programId: PublicKey) {
+export function getDepositMetadataPDA(depositId: Uint8Array | number[], programId: PublicKey) {
+  const depositIdBytes = depositId instanceof Uint8Array ? depositId : new Uint8Array(depositId);
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("deposit"), Buffer.from(new Uint8Array(depositId))],
+    [Buffer.from("deposit"), Buffer.from(depositIdBytes)],
     programId
   );
 }
 
-export function getEncryptedNotePDA(noteNonce: number[], programId: PublicKey) {
+export function getEncryptedNotePDA(noteNonce: Uint8Array | number[], programId: PublicKey) {
+  const noteNonceBytes = noteNonce instanceof Uint8Array ? noteNonce : new Uint8Array(noteNonce);
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("note"), Buffer.from(new Uint8Array(noteNonce))],
+    [Buffer.from("note"), Buffer.from(noteNonceBytes)],
     programId
   );
 }

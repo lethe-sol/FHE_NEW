@@ -89,6 +89,63 @@ function PrivacyVault() {
             setStatus(`Vault initialization failed: ${error instanceof Error ? error.message : String(error)}`);
         }
     }, [publicKey]);
+    const testSimpleDeposit = useCallback(async () => {
+        if (!publicKey || !window.solana) {
+            setStatus('Please connect your wallet');
+            return;
+        }
+
+        try {
+            setStatus('Testing simple deposit with hardcoded values...');
+            
+            const program = getProgram(connection, window.solana, PROGRAM_ID);
+            
+            const depositId = new Uint8Array(32).fill(1);
+            const noteNonce = new Uint8Array(32).fill(2);
+            const encryptedNoteData = new Uint8Array([1, 2, 3, 4, 5]); // Simple test data
+            const signature = new Uint8Array(64).fill(0);
+            const amount = 100000000; // 0.1 SOL in lamports
+            
+            const [vaultPDA] = getVaultPDA(PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
+            
+            console.log('Test values:', {
+                depositId: depositId.length,
+                noteNonce: noteNonce.length,
+                encryptedNoteData: encryptedNoteData.length,
+                signature: signature.length,
+                amount
+            });
+            
+            setStatus('Sending test transaction...');
+            
+            const tx = await program.methods
+                .deposit(
+                    depositId,
+                    noteNonce,
+                    encryptedNoteData,
+                    signature,
+                    amount
+                )
+                .accounts({
+                    deposit_metadata: depositMetadataPDA,
+                    encrypted_note: encryptedNotePDA,
+                    vault: vaultPDA,
+                    depositor: publicKey,
+                    system_program: SystemProgram.programId,
+                })
+                .rpc();
+            
+            setStatus(`Test deposit successful! Transaction: ${tx.substring(0, 20)}...`);
+            
+        } catch (error) {
+            console.error('Test deposit error:', error);
+            setStatus(`Test deposit failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }, [publicKey]);
+
+
 
     const handleDeposit = useCallback(async () => {
         if (!publicKey || !window.solana) {
@@ -124,8 +181,8 @@ function PrivacyVault() {
             setWithdrawalString(withdrawalString);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(Array.from(depositId), PROGRAM_ID);
-            const [encryptedNotePDA] = getEncryptedNotePDA(Array.from(noteNonce), PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
             
             const encryptedNoteData = new TextEncoder().encode(JSON.stringify({
                 destinationWallet: destinationWallet || publicKey.toString(),
@@ -254,6 +311,9 @@ function PrivacyVault() {
                 </div>
                 <button onClick={handleDeposit} disabled={!depositAmount || !vaultInitialized}>
                     Create Deposit
+                </button>
+                <button onClick={testSimpleDeposit} disabled={!vaultInitialized} style={{ marginLeft: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', padding: '10px 20px' }}>
+                    Test Simple Deposit
                 </button>
             </div>
 
