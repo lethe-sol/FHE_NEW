@@ -41,7 +41,9 @@ class FHEManager {
         
         const value = new DataView(data.buffer).getUint32(0, true);
         
-        const ciphertext = CompactCiphertextList.encrypt_compact([value], this.publicKey);
+        const builder = CompactCiphertextList.builder(this.publicKey);
+        builder.push_u32(value);
+        const ciphertext = builder.build();
         return ciphertext.serialize();
     }
 
