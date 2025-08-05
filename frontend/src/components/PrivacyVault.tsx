@@ -242,8 +242,8 @@ function PrivacyVault() {
             const depositId = hashData(combinedData);
             
             const withdrawalData = {
-                depositId: Buffer.from(depositId),
-                noteNonce: Buffer.from(noteNonce),
+                depositId: Array.from(depositId),
+                noteNonce: Array.from(noteNonce),
                 destinationWallet: destinationWallet,
                 amount: amount
             };
@@ -309,8 +309,8 @@ function PrivacyVault() {
             const program = getProgram(connection, wallet);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
-            const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(new Uint8Array(depositId), PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(new Uint8Array(noteNonce), PROGRAM_ID);
             
             const destinationWalletPubkey = new PublicKey(destinationWallet.trim());
             const relayerPubkey = publicKey;
@@ -319,18 +319,18 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .withdraw(
-                    Buffer.from(depositId),
-                    Buffer.from(noteNonce),
+                    Buffer.from(new Uint8Array(depositId)),
+                    Buffer.from(new Uint8Array(noteNonce)),
                     destinationWalletPubkey,
                     relayerPubkey
                 )
                 .accounts({
-                    depositMetadata: depositMetadataPDA,
-                    encryptedNote: encryptedNotePDA,
+                    deposit_metadata: depositMetadataPDA,
+                    encrypted_note: encryptedNotePDA,
                     vault: vaultPDA,
-                    destinationWallet: destinationWalletPubkey,
+                    destination_wallet: destinationWalletPubkey,
                     relayer: relayerPubkey,
-                    systemProgram: SystemProgram.programId,
+                    system_program: SystemProgram.programId,
                 })
                 .rpc();
             
