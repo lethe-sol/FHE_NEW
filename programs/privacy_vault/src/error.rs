@@ -8,6 +8,8 @@ pub enum ErrorCode {
     DepositAlreadyUsed,
     #[msg("Invalid commitment")]
     InvalidCommitment,
+    #[msg("Invalid nullifier hash")]
+    InvalidNullifierHash,
     #[msg("Unauthorized access")]
     Unauthorized,
     #[msg("Invalid amount")]

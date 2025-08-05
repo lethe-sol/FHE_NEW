@@ -11,7 +11,7 @@ pub struct Withdraw<'info> {
         bump = deposit_metadata.bump,
         constraint = !deposit_metadata.used @ VaultErrorCode::DepositAlreadyUsed,
         constraint = deposit_metadata.commitment == commitment @ VaultErrorCode::InvalidCommitment,
-        constraint = deposit_metadata.nullifier_hash == nullifier_hash @ VaultErrorCode::InvalidCommitment
+        constraint = deposit_metadata.nullifier_hash == nullifier_hash @ VaultErrorCode::InvalidNullifierHash
     )]
     pub deposit_metadata: Account<'info, DepositMetadata>,
     
