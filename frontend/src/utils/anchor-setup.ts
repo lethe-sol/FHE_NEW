@@ -598,8 +598,19 @@ export const PRIVACY_VAULT_IDL: Idl = {
 };
 
 export function getProgram(connection: Connection, wallet: any) {
-  if (!wallet || !wallet.publicKey) {
-    throw new Error('Wallet not connected');
+  console.log('getProgram called with wallet:', wallet);
+  console.log('wallet type:', typeof wallet);
+  console.log('wallet.publicKey:', wallet?.publicKey);
+  console.log('wallet keys:', wallet ? Object.keys(wallet) : 'wallet is null');
+  
+  if (!wallet) {
+    console.log('Wallet is null/undefined');
+    throw new Error('Wallet object is null or undefined');
+  }
+  
+  if (!wallet.publicKey) {
+    console.log('Wallet publicKey is missing');
+    throw new Error('Wallet publicKey is missing');
   }
   
   const anchorWallet = {

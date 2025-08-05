@@ -72,6 +72,10 @@ function PrivacyVault() {
     }, [publicKey]);
 
     const initializeVault = useCallback(async () => {
+        console.log('initializeVault called with:', { publicKey, wallet });
+        console.log('wallet type:', typeof wallet);
+        console.log('wallet keys:', wallet ? Object.keys(wallet) : 'wallet is null');
+        
         if (!publicKey || !wallet) {
             setStatus('Please connect your wallet');
             return;
