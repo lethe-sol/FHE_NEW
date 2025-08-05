@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, LAMPORTS_PER_SOL, Connection, SystemProgram } from '@solana/web3.js';
 import * as anchor from '@coral-xyz/anchor';
-import { getProgram, getVaultPDA, getVaultConfigPDA, getDepositMetadataPDA, getEncryptedNotePDA } from '../utils/anchor-setup';
+import { getProgram, getVaultPDA, getVaultConfigPDA, getDepositMetadataPDA, getEncryptedNotePDA } from '../utils/anchor-setup-new';
 
 const PROGRAM_ID = new PublicKey('9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553');
 
@@ -21,10 +21,9 @@ class FHEManager {
                 this.clientKey = TfheClientKey.deserialize(new Uint8Array(JSON.parse(storedClientKey)));
             } else {
                 this.clientKey = null; // Will be properly implemented once IDL is fixed
-                localStorage.setItem('fhe_client_key', JSON.stringify(Array.from(this.clientKey.serialize())));
             }
             
-            this.publicKey = TfheCompactPublicKey.new(this.clientKey);
+            this.publicKey = null; // Will be properly implemented once IDL is fixed
             
             console.log('FHE Manager initialized successfully');
         } catch (error) {
