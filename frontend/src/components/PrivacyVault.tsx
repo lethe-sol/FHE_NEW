@@ -141,8 +141,8 @@ function PrivacyVault() {
                 .deposit(
                     new Uint8Array(depositId),
                     new Uint8Array(noteNonce),
-                    new Uint8Array(encryptedNoteData),
-                    new Uint8Array(signature),
+                    encryptedNoteData,
+                    signature,
                     amount
                 )
                 .accounts({
