@@ -21,8 +21,6 @@ const mockFHE = {
 
 function PrivacyVault() {
     const { publicKey, wallet } = useWallet();
-    const [depositAmount, setDepositAmount] = useState('');
-    const [destinationWallet, setDestinationWallet] = useState('');
     const [withdrawalString, setWithdrawalString] = useState('');
     const [status, setStatus] = useState('');
     const [vaultInitialized, setVaultInitialized] = useState(false);
@@ -44,14 +42,27 @@ function PrivacyVault() {
         
         try {
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const accountInfo = await connection.getAccountInfo(vaultPDA);
-            const isInitialized = !!accountInfo;
-            setVaultInitialized(isInitialized);
+            const [vaultConfigPDA] = getVaultConfigPDA(PROGRAM_ID);
             
-            if (isInitialized) {
-                setStatus(`Vault is initialized! PDA: ${vaultPDA.toString().substring(0, 20)}...`);
+            const [vaultAccountInfo, vaultConfigAccountInfo] = await Promise.all([
+                connection.getAccountInfo(vaultPDA),
+                connection.getAccountInfo(vaultConfigPDA)
+            ]);
+            
+            const vaultExists = !!vaultAccountInfo;
+            const vaultConfigExists = !!vaultConfigAccountInfo;
+            const isFullyInitialized = vaultExists && vaultConfigExists;
+            
+            setVaultInitialized(isFullyInitialized);
+            
+            if (isFullyInitialized) {
+                setStatus(`Vault fully initialized! Vault PDA: ${vaultPDA.toString().substring(0, 20)}... Config PDA: ${vaultConfigPDA.toString().substring(0, 20)}...`);
+            } else if (vaultExists && !vaultConfigExists) {
+                setStatus('Vault PDA exists but vault config missing. Please initialize vault config.');
+            } else if (!vaultExists && vaultConfigExists) {
+                setStatus('Vault config exists but vault PDA missing. Please initialize vault first.');
             } else {
-                setStatus('Vault not found. Please initialize the vault first.');
+                setStatus('Neither vault nor vault config found. Please initialize both.');
             }
         } catch (error) {
             console.error('Error checking vault:', error);
@@ -89,7 +100,47 @@ function PrivacyVault() {
             const errorMessage = error instanceof Error ? error.message : String(error);
             setStatus(`Vault initialization failed: ${errorMessage}`);
         }
-    }, [publicKey]);
+    }, [publicKey, wallet]);
+
+    const initializeVaultConfig = useCallback(async () => {
+        if (!publicKey || !wallet) {
+            setStatus('Please connect your wallet');
+            return;
+        }
+
+        try {
+            setStatus('Initializing vault configuration...');
+            
+            const program = getProgram(connection, wallet);
+            const [vaultConfigPDA] = getVaultConfigPDA(PROGRAM_ID);
+            
+            const authority = publicKey;
+            const rewardMint = PublicKey.default;
+            const rewardTokenVault = PublicKey.default;
+            const rewardRatePerSecond = 0;
+            
+            const tx = await program.methods
+                .initializeVaultConfig(
+                    authority,
+                    rewardMint,
+                    rewardTokenVault,
+                    rewardRatePerSecond
+                )
+                .accounts({
+                    vault_config: vaultConfigPDA,
+                    payer: publicKey,
+                    system_program: SystemProgram.programId,
+                })
+                .rpc();
+            
+            setStatus(`Vault config initialized! Transaction: ${tx.substring(0, 20)}...`);
+            
+        } catch (error) {
+            console.error('Vault config initialization error:', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            setStatus(`Vault config initialization failed: ${errorMessage}`);
+        }
+    }, [publicKey, wallet]);
     const testSimpleDeposit = useCallback(async () => {
         if (!publicKey || !wallet) {
             setStatus('Please connect your wallet');
@@ -144,7 +195,7 @@ function PrivacyVault() {
             console.error('Test deposit error:', error);
             setStatus(`Test deposit failed: ${error instanceof Error ? error.message : String(error)}`);
         }
-    }, [publicKey]);
+    }, [publicKey, wallet]);
 
 
 
@@ -220,7 +271,7 @@ function PrivacyVault() {
             console.error('Simple deposit error:', error);
             setStatus(`Simple deposit failed: ${error instanceof Error ? error.message : String(error)}`);
         }
-    }, [publicKey, vaultInitialized]);
+    }, [publicKey, vaultInitialized, wallet]);
 
     const handleWithdraw = useCallback(async () => {
         if (!publicKey || !wallet) {
@@ -268,7 +319,7 @@ function PrivacyVault() {
             console.error('Withdrawal error:', error);
             setStatus(`Withdrawal failed: ${error instanceof Error ? error.message : String(error)}`);
         }
-    }, [publicKey, withdrawalString]);
+    }, [publicKey, withdrawalString, wallet]);
 
     React.useEffect(() => {
         if (publicKey) {
@@ -283,9 +334,12 @@ function PrivacyVault() {
             {publicKey && !vaultInitialized && (
                 <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7' }}>
                     <h4>⚠️ Vault Not Initialized</h4>
-                    <p>The vault needs to be initialized before deposits can be made.</p>
-                    <button onClick={initializeVault} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}>
-                        Initialize Vault
+                    <p>The vault needs to be initialized before deposits can be made. This requires two steps:</p>
+                    <button onClick={initializeVault} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', marginRight: '10px' }}>
+                        1. Initialize Vault
+                    </button>
+                    <button onClick={initializeVaultConfig} style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}>
+                        2. Initialize Vault Config
                     </button>
                 </div>
             )}
