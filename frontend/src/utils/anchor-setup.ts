@@ -1,7 +1,7 @@
-import { Program, AnchorProvider, web3, Idl } from '@coral-xyz/anchor';
+import { AnchorProvider, Program } from '@coral-xyz/anchor';
 import { Connection, PublicKey } from '@solana/web3.js';
 
-export const PRIVACY_VAULT_IDL: Idl = {
+export const PRIVACY_VAULT_IDL: any = {
   "address": "9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553",
   "metadata": {
     "name": "privacy_vault",
@@ -41,8 +41,8 @@ export const PRIVACY_VAULT_IDL: Idl = {
                 ]
               },
               {
-                "kind": "account",
-                "path": "vault_config.next_deposit_id"
+                "kind": "arg",
+                "path": "deposit_id"
               }
             ]
           }
@@ -63,7 +63,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
               },
               {
                 "kind": "arg",
-                "path": "nullifier_hash"
+                "path": "note_nonce"
               }
             ]
           }
@@ -87,31 +87,6 @@ export const PRIVACY_VAULT_IDL: Idl = {
           }
         },
         {
-          "name": "vault_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "depositor",
           "writable": true,
           "signer": true
@@ -123,7 +98,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
       ],
       "args": [
         {
-          "name": "commitment",
+          "name": "deposit_id",
           "type": {
             "array": [
               "u8",
@@ -132,7 +107,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
           }
         },
         {
-          "name": "nullifier_hash",
+          "name": "note_nonce",
           "type": {
             "array": [
               "u8",
@@ -388,7 +363,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
               },
               {
                 "kind": "arg",
-                "path": "nullifier_hash"
+                "path": "note_nonce"
               }
             ]
           }
@@ -427,10 +402,6 @@ export const PRIVACY_VAULT_IDL: Idl = {
       "args": [
         {
           "name": "deposit_id",
-          "type": "u64"
-        },
-        {
-          "name": "commitment",
           "type": {
             "array": [
               "u8",
@@ -439,7 +410,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
           }
         },
         {
-          "name": "nullifier_hash",
+          "name": "note_nonce",
           "type": {
             "array": [
               "u8",
@@ -512,8 +483,8 @@ export const PRIVACY_VAULT_IDL: Idl = {
     },
     {
       "code": 6002,
-      "name": "InvalidCommitment",
-      "msg": "Invalid commitment"
+      "name": "InvalidDepositId",
+      "msg": "Invalid deposit ID"
     },
     {
       "code": 6003,
@@ -544,10 +515,6 @@ export const PRIVACY_VAULT_IDL: Idl = {
         "fields": [
           {
             "name": "deposit_id",
-            "type": "u64"
-          },
-          {
-            "name": "commitment",
             "type": {
               "array": [
                 "u8",
@@ -568,7 +535,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
             "type": "bool"
           },
           {
-            "name": "nullifier_hash",
+            "name": "note_nonce",
             "type": {
               "array": [
                 "u8",
@@ -621,10 +588,6 @@ export const PRIVACY_VAULT_IDL: Idl = {
             "type": "u64"
           },
           {
-            "name": "next_deposit_id",
-            "type": "u64"
-          },
-          {
             "name": "bump",
             "type": "u8"
           }
@@ -660,19 +623,18 @@ export function getVaultConfigPDA(programId: PublicKey) {
   );
 }
 
-export function getDepositMetadataPDA(depositId: number, programId: PublicKey): [PublicKey, number] {
-  const depositIdBuffer = Buffer.alloc(8);
-  depositIdBuffer.writeBigUInt64LE(BigInt(depositId), 0);
+export function getDepositMetadataPDA(depositId: Uint8Array | number[], programId: PublicKey): [PublicKey, number] {
+  const depositIdBytes = depositId instanceof Uint8Array ? depositId : new Uint8Array(depositId);
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("deposit"), depositIdBuffer],
+    [Buffer.from("deposit"), Buffer.from(depositIdBytes)],
     programId
   );
 }
 
-export function getEncryptedNotePDA(nullifierHash: Uint8Array | number[], programId: PublicKey) {
-  const nullifierHashBytes = nullifierHash instanceof Uint8Array ? nullifierHash : new Uint8Array(nullifierHash);
+export function getEncryptedNotePDA(noteNonce: Uint8Array | number[], programId: PublicKey) {
+  const noteNonceBytes = noteNonce instanceof Uint8Array ? noteNonce : new Uint8Array(noteNonce);
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("note"), Buffer.from(nullifierHashBytes)],
+    [Buffer.from("note"), Buffer.from(noteNonceBytes)],
     programId
   );
 }

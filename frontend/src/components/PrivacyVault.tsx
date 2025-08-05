@@ -1,58 +1,56 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, LAMPORTS_PER_SOL, Connection, SystemProgram } from '@solana/web3.js';
 import * as anchor from '@coral-xyz/anchor';
 import { getProgram, getVaultPDA, getVaultConfigPDA, getDepositMetadataPDA, getEncryptedNotePDA } from '../utils/anchor-setup';
-import init, { TfheClientKey, TfheCompactPublicKey, CompactCiphertextList, TfheConfigBuilder } from 'tfhe';
 
 const PROGRAM_ID = new PublicKey('9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553');
-const connection = new Connection(process.env.REACT_APP_RPC_URL || 'https://api.devnet.solana.com');
 
 class FHEManager {
-    private clientKey: TfheClientKey | null = null;
-    private publicKey: TfheCompactPublicKey | null = null;
-    private initialized = false;
+    private clientKey: any = null;
+    private publicKey: any = null;
 
     async initialize() {
-        if (this.initialized) return;
+        if (this.clientKey) return;
         
-        await init();
-        
-        const savedClientKey = localStorage.getItem('fhe_client_key');
-        const savedPublicKey = localStorage.getItem('fhe_public_key');
-        
-        if (savedClientKey && savedPublicKey) {
-            this.clientKey = TfheClientKey.deserialize(new Uint8Array(JSON.parse(savedClientKey)));
-            this.publicKey = TfheCompactPublicKey.deserialize(new Uint8Array(JSON.parse(savedPublicKey)));
-        } else {
-            const config = TfheConfigBuilder.default().build();
-            this.clientKey = TfheClientKey.generate(config);
+        try {
+            const { TfheClientKey, TfheCompactPublicKey, CompactCiphertextList } = await import('tfhe');
+            
+            let storedClientKey = localStorage.getItem('fhe_client_key');
+            if (storedClientKey) {
+                this.clientKey = TfheClientKey.deserialize(new Uint8Array(JSON.parse(storedClientKey)));
+            } else {
+                this.clientKey = TfheClientKey.generate();
+                localStorage.setItem('fhe_client_key', JSON.stringify(Array.from(this.clientKey.serialize())));
+            }
+            
             this.publicKey = TfheCompactPublicKey.new(this.clientKey);
             
-            localStorage.setItem('fhe_client_key', JSON.stringify(Array.from(this.clientKey.serialize())));
-            localStorage.setItem('fhe_public_key', JSON.stringify(Array.from(this.publicKey.serialize())));
+            console.log('FHE Manager initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize FHE Manager:', error);
+            throw error;
         }
-        
-        this.initialized = true;
     }
 
     encryptCommitment(data: Uint8Array): Uint8Array {
         if (!this.publicKey) throw new Error('FHE not initialized');
         
+        const { CompactCiphertextList } = require('tfhe');
         const value = new DataView(data.buffer).getUint32(0, true);
         
-        const builder = CompactCiphertextList.builder(this.publicKey);
-        builder.push_u32(value);
-        const ciphertext = builder.build();
+        const ciphertext = CompactCiphertextList.builder(this.publicKey)
+            .push_uint32(value)
+            .build();
         return ciphertext.serialize();
     }
 
     decryptCommitment(encryptedData: Uint8Array): Uint8Array {
         if (!this.clientKey) throw new Error('FHE not initialized');
         
+        const { CompactCiphertextList } = require('tfhe');
         const ciphertext = CompactCiphertextList.deserialize(encryptedData);
-        const expandedList = ciphertext.expand();
-        const decrypted = expandedList.get_uint32(0).decrypt(this.clientKey);
+        const decrypted = ciphertext.expand().get_uint32(0).decrypt(this.clientKey);
         
         const result = new Uint8Array(32);
         new DataView(result.buffer).setUint32(0, decrypted, true);
@@ -65,58 +63,52 @@ const fheManager = new FHEManager();
 function PrivacyVault() {
     const { publicKey } = useWallet();
     const wallet = useAnchorWallet();
-    const [withdrawalString, setWithdrawalString] = useState('');
-    const [destinationWallet, setDestinationWallet] = useState('');
-    const [status, setStatus] = useState('');
-    const [vaultInitialized, setVaultInitialized] = useState(false);
+    const connection = new Connection('https://api.devnet.solana.com');
+    
+    const [status, setStatus] = useState<string>('');
+    const [vaultInitialized, setVaultInitialized] = useState<boolean>(false);
+    const [withdrawalString, setWithdrawalString] = useState<string>('');
+    const [destinationWallet, setDestinationWallet] = useState<string>('');
 
     const generateRandomNonce = () => {
         return crypto.getRandomValues(new Uint8Array(32));
     };
 
-    const hashData = (data: Uint8Array) => {
-        const hash = new Uint8Array(32);
-        for (let i = 0; i < data.length; i++) {
-            hash[i % 32] ^= data[i];
-        }
-        return hash;
+    const hashData = async (data: Uint8Array): Promise<Uint8Array> => {
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        return new Uint8Array(hashBuffer);
     };
 
     const checkVaultInitialized = useCallback(async () => {
-        if (!publicKey) return;
-        
+        if (!publicKey || !wallet) return;
+
         try {
-            const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [vaultConfigPDA] = getVaultConfigPDA(PROGRAM_ID);
+            const program = getProgram(connection, wallet);
             
             const [vaultAccountInfo, vaultConfigAccountInfo] = await Promise.all([
-                connection.getAccountInfo(vaultPDA),
-                connection.getAccountInfo(vaultConfigPDA)
+                program.provider.connection.getAccountInfo(getVaultPDA(PROGRAM_ID)[0]),
+                program.provider.connection.getAccountInfo(getVaultConfigPDA(PROGRAM_ID)[0])
             ]);
-            
-            const vaultExists = !!vaultAccountInfo;
-            const vaultConfigExists = !!vaultConfigAccountInfo;
+
+            const vaultExists = vaultAccountInfo !== null;
+            const vaultConfigExists = vaultConfigAccountInfo !== null;
             const isFullyInitialized = vaultExists && vaultConfigExists;
-            
-            console.log('Vault status check:', { vaultExists, vaultConfigExists, isFullyInitialized });
-            
+
+            console.log('Vault status check:', {vaultExists, vaultConfigExists, isFullyInitialized});
             setVaultInitialized(isFullyInitialized);
-            
+
             if (isFullyInitialized) {
-                setStatus(`Vault fully initialized! Vault PDA: ${vaultPDA.toString().substring(0, 20)}... Config PDA: ${vaultConfigPDA.toString().substring(0, 20)}...`);
+                setStatus('Vault fully initialized!');
             } else if (vaultExists && !vaultConfigExists) {
-                setStatus('Vault PDA exists but vault config missing. Please initialize vault config.');
-            } else if (!vaultExists && vaultConfigExists) {
-                setStatus('Vault config exists but vault PDA missing. Please initialize vault first.');
-            } else {
-                setStatus('Neither vault nor vault config found. Please initialize both.');
+                setStatus('Vault initialized, but vault config missing. Click "2. Initialize Vault Config"');
+            } else if (!vaultExists) {
+                setStatus('Vault not initialized. Click "1. Initialize Vault" first');
             }
         } catch (error) {
-            console.error('Error checking vault:', error);
-            setVaultInitialized(false);
-            setStatus(`Error checking vault: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('Error checking vault status:', error);
+            setStatus('Error checking vault status');
         }
-    }, [publicKey]);
+    }, [publicKey, wallet, connection]);
 
     const initializeVault = useCallback(async () => {
         if (!publicKey || !wallet) {
@@ -126,33 +118,23 @@ function PrivacyVault() {
 
         try {
             setStatus('Initializing vault...');
-            
             const program = getProgram(connection, wallet);
-            const [vaultPDA] = getVaultPDA(PROGRAM_ID);
             
             const tx = await program.methods
                 .initializeVault()
                 .accounts({
-                    vault: vaultPDA,
+                    vault: getVaultPDA(PROGRAM_ID)[0],
                     payer: publicKey,
-                    system_program: SystemProgram.programId,
+                    systemProgram: SystemProgram.programId,
                 })
                 .rpc();
             
             setStatus(`Vault initialized! Transaction: ${tx.substring(0, 20)}...`);
-            
+            await checkVaultInitialized();
         } catch (error) {
             console.error('Vault initialization error:', error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            
-            if (errorMessage.includes('already in use') || errorMessage.includes('already exists')) {
-                setStatus('Vault already exists! Proceeding to check vault status...');
-            } else {
-                setStatus(`Vault initialization failed: ${errorMessage}`);
-            }
+            setStatus(`Vault initialization failed: ${error instanceof Error ? error.message : String(error)}`);
         }
-        
-        setTimeout(() => checkVaultInitialized(), 1000);
     }, [publicKey, wallet, checkVaultInitialized]);
 
     const initializeVaultConfig = useCallback(async () => {
@@ -162,16 +144,13 @@ function PrivacyVault() {
         }
 
         try {
-            setStatus('Initializing vault configuration...');
-            console.log('Starting VaultConfig initialization...');
-            
+            setStatus('Initializing vault config...');
             const program = getProgram(connection, wallet);
-            const [vaultConfigPDA] = getVaultConfigPDA(PROGRAM_ID);
             
             const authority = publicKey;
-            const rewardMint = PublicKey.default;
-            const rewardTokenVault = PublicKey.default;
-            const rewardRatePerSecond = new anchor.BN(0);
+            const rewardMint = new PublicKey('11111111111111111111111111111111');
+            const rewardTokenVault = new PublicKey('11111111111111111111111111111111');
+            const rewardRatePerSecond = new anchor.BN(1000);
             
             const tx = await program.methods
                 .initializeVaultConfig(
@@ -181,29 +160,20 @@ function PrivacyVault() {
                     rewardRatePerSecond
                 )
                 .accounts({
-                    vault_config: vaultConfigPDA,
+                    vaultConfig: getVaultConfigPDA(PROGRAM_ID)[0],
                     payer: publicKey,
-                    system_program: SystemProgram.programId,
+                    systemProgram: SystemProgram.programId,
                 })
                 .rpc();
             
-            console.log('VaultConfig initialization successful:', tx);
             setStatus(`Vault config initialized! Transaction: ${tx.substring(0, 20)}...`);
-            
+            await checkVaultInitialized();
         } catch (error) {
             console.error('Vault config initialization error:', error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            
-            if (errorMessage.includes('already in use') || errorMessage.includes('already exists')) {
-                console.log('VaultConfig already exists, proceeding...');
-                setStatus('Vault config already exists! Proceeding to check vault status...');
-            } else {
-                setStatus(`Vault config initialization failed: ${errorMessage}`);
-            }
+            setStatus(`Vault config initialization failed: ${error instanceof Error ? error.message : String(error)}`);
         }
-        
-        setTimeout(() => checkVaultInitialized(), 1000);
     }, [publicKey, wallet, checkVaultInitialized]);
+
     const testSimpleDeposit = useCallback(async () => {
         if (!publicKey || !wallet) {
             setStatus('Please connect your wallet');
@@ -211,7 +181,7 @@ function PrivacyVault() {
         }
 
         try {
-            setStatus('Initializing FHE and testing deposit...');
+            setStatus('Creating test deposit...');
             
             await fheManager.initialize();
             
@@ -222,25 +192,20 @@ function PrivacyVault() {
             
             const commitmentHash = await crypto.subtle.digest('SHA-256', encryptedCommitment);
             const commitment = new Uint8Array(commitmentHash);
-            const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
+            const noteNonce = crypto.getRandomValues(new Uint8Array(32));
             const encryptedNoteData = Buffer.from(new Uint8Array([1, 2, 3, 4, 5]));
             const signature = Buffer.from(new Uint8Array(64).fill(0));
             const amount = 100000000;
             
-            const vaultConfigAccount = await program.provider.connection.getAccountInfo(getVaultConfigPDA(PROGRAM_ID)[0]);
-            if (!vaultConfigAccount) {
-                throw new Error('VaultConfig account not found. Please initialize the vault configuration first by clicking "2. Initialize Vault Config" button.');
-            }
-            const vaultConfig = program.coder.accounts.decode('VaultConfig', vaultConfigAccount.data);
-            const nextDepositId = vaultConfig.nextDepositId.toNumber();
+            const depositId = crypto.getRandomValues(new Uint8Array(32));
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(nextDepositId, PROGRAM_ID);
-            const [encryptedNotePDA] = getEncryptedNotePDA(nullifierHash, PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
             
             console.log('Test values:', {
                 commitment: commitment.length,
-                nullifierHash: nullifierHash.length,
+                noteNonce: noteNonce.length,
                 encryptedNoteData: encryptedNoteData.length,
                 signature: signature.length,
                 amount
@@ -250,8 +215,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .deposit(
-                    Buffer.from(commitment),
-                    Buffer.from(nullifierHash),
+                    Array.from(depositId),
+                    Array.from(noteNonce),
                     encryptedNoteData,
                     signature,
                     new anchor.BN(amount)
@@ -259,7 +224,6 @@ function PrivacyVault() {
                 .accounts({
                     deposit_metadata: depositMetadataPDA,
                     encrypted_note: encryptedNotePDA,
-                    vault_config: getVaultConfigPDA(PROGRAM_ID)[0],
                     vault: vaultPDA,
                     depositor: publicKey,
                     system_program: SystemProgram.programId,
@@ -273,8 +237,6 @@ function PrivacyVault() {
             setStatus(`Test deposit failed: ${error instanceof Error ? error.message : String(error)}`);
         }
     }, [publicKey, wallet]);
-
-
 
     const handleSimpleDeposit = useCallback(async () => {
         if (!publicKey || !wallet) {
@@ -302,20 +264,15 @@ function PrivacyVault() {
             
             const commitmentHash = await crypto.subtle.digest('SHA-256', encryptedCommitment);
             const commitment = new Uint8Array(commitmentHash);
-            const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
+            const noteNonce = crypto.getRandomValues(new Uint8Array(32));
             
-            const vaultConfigAccount = await program.provider.connection.getAccountInfo(getVaultConfigPDA(PROGRAM_ID)[0]);
-            if (!vaultConfigAccount) {
-                throw new Error('VaultConfig account not found. Please initialize the vault configuration first by clicking "2. Initialize Vault Config" button.');
-            }
-            const vaultConfig = program.coder.accounts.decode('VaultConfig', vaultConfigAccount.data);
-            const nextDepositId = vaultConfig.nextDepositId.toNumber();
+            const depositId = new Uint8Array(await crypto.subtle.digest('SHA-256', encryptedCommitment));
             
             const withdrawalData = {
-                depositId: nextDepositId,
+                depositId: Array.from(depositId),
                 originalCommitment: Array.from(originalCommitment),
                 commitment: Array.from(commitment),
-                nullifierHash: Array.from(nullifierHash),
+                noteNonce: Array.from(noteNonce),
                 destinationWallet: destinationWallet,
                 amount: amount
             };
@@ -323,8 +280,8 @@ function PrivacyVault() {
             setWithdrawalString(withdrawalString);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(nextDepositId, PROGRAM_ID);
-            const [encryptedNotePDA] = getEncryptedNotePDA(nullifierHash, PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
             
             const encryptedNoteData = Buffer.from(new TextEncoder().encode(JSON.stringify({
                 destinationWallet: destinationWallet,
@@ -338,8 +295,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .deposit(
-                    Buffer.from(commitment),
-                    Buffer.from(nullifierHash),
+                    Array.from(depositId),
+                    Array.from(noteNonce),
                     encryptedNoteData,
                     signature,
                     new anchor.BN(amount)
@@ -347,7 +304,6 @@ function PrivacyVault() {
                 .accounts({
                     deposit_metadata: depositMetadataPDA,
                     encrypted_note: encryptedNotePDA,
-                    vault_config: getVaultConfigPDA(PROGRAM_ID)[0],
                     vault: vaultPDA,
                     depositor: publicKey,
                     system_program: SystemProgram.programId,
@@ -374,7 +330,7 @@ function PrivacyVault() {
             await fheManager.initialize();
             
             const withdrawalData = JSON.parse(atob(withdrawalString));
-            const { depositId, originalCommitment, commitment, nullifierHash, amount } = withdrawalData;
+            const { depositId, originalCommitment, commitment, noteNonce, amount } = withdrawalData;
             
             if (!destinationWallet.trim()) {
                 setStatus('Please enter a destination wallet address');
@@ -384,8 +340,8 @@ function PrivacyVault() {
             const program = getProgram(connection, wallet);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
-            const [encryptedNotePDA] = getEncryptedNotePDA(new Uint8Array(nullifierHash), PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(new Uint8Array(depositId), PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(new Uint8Array(noteNonce), PROGRAM_ID);
             
             const destinationWalletPubkey = new PublicKey(destinationWallet.trim());
             const relayerPubkey = publicKey;
@@ -394,19 +350,18 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .withdraw(
-                    depositId,
-                    Buffer.from(new Uint8Array(commitment)),
-                    Buffer.from(new Uint8Array(nullifierHash)),
+                    Array.from(new Uint8Array(depositId)),
+                    Array.from(new Uint8Array(noteNonce)),
                     destinationWalletPubkey,
                     relayerPubkey
                 )
                 .accounts({
-                    depositMetadata: depositMetadataPDA,
-                    encryptedNote: encryptedNotePDA,
+                    deposit_metadata: depositMetadataPDA,
+                    encrypted_note: encryptedNotePDA,
                     vault: vaultPDA,
-                    destinationWallet: destinationWalletPubkey,
+                    destination_wallet: destinationWalletPubkey,
                     relayer: relayerPubkey,
-                    systemProgram: SystemProgram.programId,
+                    system_program: SystemProgram.programId,
                 })
                 .rpc();
             
