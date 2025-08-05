@@ -3,7 +3,7 @@ import { useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, LAMPORTS_PER_SOL, Connection, SystemProgram } from '@solana/web3.js';
 import * as anchor from '@coral-xyz/anchor';
 import { getProgram, getVaultPDA, getVaultConfigPDA, getDepositMetadataPDA, getEncryptedNotePDA } from '../utils/anchor-setup';
-import { init, TfheClientKey, TfheCompactPublicKey, CompactCiphertextList } from 'tfhe';
+import init, { TfheClientKey, TfheCompactPublicKey, CompactCiphertextList } from 'tfhe';
 
 const PROGRAM_ID = new PublicKey('9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553');
 const connection = new Connection(process.env.REACT_APP_RPC_URL || 'https://api.devnet.solana.com');
@@ -26,7 +26,7 @@ class FHEManager {
             this.publicKey = TfheCompactPublicKey.deserialize(new Uint8Array(JSON.parse(savedPublicKey)));
         } else {
             this.clientKey = TfheClientKey.generate();
-            this.publicKey = TfheCompactPublicKey.new(this.clientKey);
+            this.publicKey = this.clientKey.public_key();
             
             localStorage.setItem('fhe_client_key', JSON.stringify(Array.from(this.clientKey.serialize())));
             localStorage.setItem('fhe_public_key', JSON.stringify(Array.from(this.publicKey.serialize())));
