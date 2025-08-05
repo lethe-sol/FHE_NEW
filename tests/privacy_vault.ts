@@ -8,7 +8,7 @@ describe("privacy_vault", () => {
   const program = anchor.workspace.PrivacyVault as Program<PrivacyVault>;
 
   it("Is initialized!", async () => {
-    const tx = await program.methods.initialize().rpc();
+    const tx = await program.methods.initializeVault().rpc();
     console.log("Your transaction signature", tx);
   });
 });

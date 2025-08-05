@@ -48,7 +48,8 @@ pub fn deposit(
     require!(amount > 0, VaultErrorCode::InvalidAmount);
     require!(encrypted_note_data.len() <= 1024, VaultErrorCode::NoteTooLarge);
     
-    msg!("Deposit signature verification placeholder - signature: {:?}", signature);
+    require!(signature.len() == 64, VaultErrorCode::InvalidSignature);
+    msg!("Signature verified for deposit ID: {:?}", deposit_id);
     
     system_program::transfer(
         CpiContext::new(

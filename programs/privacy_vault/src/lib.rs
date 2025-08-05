@@ -28,6 +28,10 @@ pub mod privacy_vault {
         )
     }
 
+    pub fn initialize_vault(ctx: Context<InitializeVault>) -> Result<()> {
+        instructions::initialize_vault(ctx)
+    }
+
     pub fn update_vault_config(
         ctx: Context<UpdateVaultConfig>,
         reward_mint: Option<Pubkey>,
@@ -58,7 +62,6 @@ pub mod privacy_vault {
         deposit_id: [u8; 32],
         note_nonce: [u8; 32],
         destination_wallet: Pubkey,
-        destination_token_account: Pubkey,
         relayer: Pubkey,
     ) -> Result<()> {
         instructions::withdraw(
@@ -66,7 +69,6 @@ pub mod privacy_vault {
             deposit_id,
             note_nonce,
             destination_wallet,
-            destination_token_account,
             relayer,
         )
     }
