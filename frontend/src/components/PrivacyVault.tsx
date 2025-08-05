@@ -162,7 +162,7 @@ function PrivacyVault() {
             setStatus('Creating deposit...');
             
             const program = getProgram(connection, window.solana, PROGRAM_ID);
-            const amount = parseFloat(depositAmount) * LAMPORTS_PER_SOL;
+            const amount = Math.floor(parseFloat(depositAmount) * LAMPORTS_PER_SOL);
             
             const noteNonce = generateRandomNonce();
             const combinedData = new Uint8Array([
