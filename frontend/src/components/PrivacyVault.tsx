@@ -28,7 +28,7 @@ function PrivacyVault() {
     const [vaultInitialized, setVaultInitialized] = useState(false);
 
     const generateRandomNonce = () => {
-        return Array.from(crypto.getRandomValues(new Uint8Array(32)));
+        return crypto.getRandomValues(new Uint8Array(32));
     };
 
     const hashData = (data: Uint8Array) => {
@@ -36,7 +36,7 @@ function PrivacyVault() {
         for (let i = 0; i < data.length; i++) {
             hash[i % 32] ^= data[i];
         }
-        return Array.from(hash);
+        return hash;
     };
 
     const checkVaultInitialized = useCallback(async () => {
@@ -116,7 +116,7 @@ function PrivacyVault() {
             
             const withdrawalData = {
                 depositId: Array.from(depositId),
-                noteNonce: noteNonce,
+                noteNonce: Array.from(noteNonce),
                 destinationWallet: destinationWallet || publicKey.toString(),
                 amount: amount
             };
@@ -139,8 +139,8 @@ function PrivacyVault() {
             
             const tx = await program.methods
                 .deposit(
-                    new Uint8Array(depositId),
-                    new Uint8Array(noteNonce),
+                    depositId,
+                    noteNonce,
                     encryptedNoteData,
                     signature,
                     amount
