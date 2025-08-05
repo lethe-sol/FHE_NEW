@@ -7,7 +7,7 @@ export const PRIVACY_VAULT_IDL: any = {
     "name": "privacy_vault",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Privacy-preserving vault with FHE support and relayer rewards"
+    "description": "Created with Anchor"
   },
   "instructions": [
     {
