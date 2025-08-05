@@ -325,12 +325,12 @@ function PrivacyVault() {
                     relayerPubkey
                 )
                 .accounts({
-                    deposit_metadata: depositMetadataPDA,
-                    encrypted_note: encryptedNotePDA,
+                    depositMetadata: depositMetadataPDA,
+                    encryptedNote: encryptedNotePDA,
                     vault: vaultPDA,
-                    destination_wallet: destinationWalletPubkey,
+                    destinationWallet: destinationWalletPubkey,
                     relayer: relayerPubkey,
-                    system_program: SystemProgram.programId,
+                    systemProgram: SystemProgram.programId,
                 })
                 .rpc();
             
