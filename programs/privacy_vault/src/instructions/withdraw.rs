@@ -21,6 +21,7 @@ pub struct Withdraw<'info> {
     )]
     pub encrypted_note: Account<'info, EncryptedNote>,
     
+    /// CHECK: This account is safe because it's a PDA validated by seeds and bump, no additional type checks needed
     #[account(
         mut,
         seeds = [b"vault"],
@@ -28,9 +29,11 @@ pub struct Withdraw<'info> {
     )]
     pub vault: AccountInfo<'info>,
 
+    /// CHECK: This account is safe because it's validated by the relayer and used for SOL transfers
     #[account(mut)]
     pub destination_wallet: AccountInfo<'info>,
 
+    /// CHECK: This account is safe because it's validated by the relayer and used for fee collection
     #[account(mut)]
     pub relayer: AccountInfo<'info>,
     

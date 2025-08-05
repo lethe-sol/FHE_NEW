@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct InitializeVault<'info> {
+    /// CHECK: This account is safe because it's a PDA validated by seeds and bump, no additional type checks needed
     #[account(
         init,
         payer = payer,
