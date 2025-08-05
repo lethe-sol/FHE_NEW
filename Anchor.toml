@@ -3,10 +3,10 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-privacy_vault = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+privacy_vault = "9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553 "
 
 [programs.devnet]
-privacy_vault = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+privacy_vault = "9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553 "
 
 [registry]
 url = "https://api.apr.dev"
