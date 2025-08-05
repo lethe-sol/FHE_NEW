@@ -1,8 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PublicKey, LAMPORTS_PER_SOL, Connection, SystemProgram } from '@solana/web3.js';
+import { getProgram, getVaultPDA, getVaultConfigPDA, getDepositMetadataPDA, getEncryptedNotePDA } from '../utils/anchor-setup';
 
-// const PROGRAM_ID = new PublicKey('Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS'); // Will be used when integrating with deployed contract
+const PROGRAM_ID = new PublicKey('9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553');
+const connection = new Connection(process.env.REACT_APP_RPC_URL || 'https://api.devnet.solana.com');
 
 const mockFHE = {
     generateKeypair: () => ({
@@ -18,11 +20,12 @@ const mockFHE = {
 };
 
 function PrivacyVault() {
-    const { publicKey } = useWallet();
+    const { publicKey, signTransaction } = useWallet();
     const [depositAmount, setDepositAmount] = useState('');
     const [destinationWallet, setDestinationWallet] = useState('');
     const [withdrawalString, setWithdrawalString] = useState('');
     const [status, setStatus] = useState('');
+    const [vaultInitialized, setVaultInitialized] = useState(false);
 
     const generateRandomNonce = () => {
         return Array.from(crypto.getRandomValues(new Uint8Array(32)));
@@ -36,30 +39,69 @@ function PrivacyVault() {
         return Array.from(hash);
     };
 
-    const handleDeposit = useCallback(async () => {
-        if (!publicKey) {
+    const checkVaultInitialized = useCallback(async () => {
+        if (!publicKey) return;
+        
+        try {
+            const [vaultPDA] = getVaultPDA(PROGRAM_ID);
+            const accountInfo = await connection.getAccountInfo(vaultPDA);
+            setVaultInitialized(!!accountInfo);
+        } catch (error) {
+            console.error('Error checking vault:', error);
+            setVaultInitialized(false);
+        }
+    }, [publicKey]);
+
+    const initializeVault = useCallback(async () => {
+        if (!publicKey || !window.solana) {
             setStatus('Please connect your wallet');
+            return;
+        }
+
+        try {
+            setStatus('Initializing vault...');
+            
+            const program = getProgram(connection, window.solana, PROGRAM_ID);
+            const [vaultPDA] = getVaultPDA(PROGRAM_ID);
+            
+            const tx = await program.methods
+                .initializeVault()
+                .accounts({
+                    vault: vaultPDA,
+                    payer: publicKey,
+                    systemProgram: SystemProgram.programId,
+                })
+                .rpc();
+            
+            setStatus(`Vault initialized! Transaction: ${tx.substring(0, 20)}...`);
+            setVaultInitialized(true);
+            
+        } catch (error) {
+            console.error('Vault initialization error:', error);
+            setStatus(`Vault initialization failed: ${error.message || error}`);
+        }
+    }, [publicKey]);
+
+    const handleDeposit = useCallback(async () => {
+        if (!publicKey || !window.solana) {
+            setStatus('Please connect your wallet');
+            return;
+        }
+
+        if (!vaultInitialized) {
+            setStatus('Vault not initialized. Please initialize vault first.');
             return;
         }
 
         try {
             setStatus('Creating deposit...');
             
-            const fheKeys = mockFHE.generateKeypair();
-            
-            const withdrawalNote = {
-                destinationWallet: destinationWallet || publicKey.toString(),
-                amount: parseFloat(depositAmount) * LAMPORTS_PER_SOL,
-                timestamp: Date.now()
-            };
-            
-            const encryptedNote = mockFHE.encrypt(withdrawalNote, fheKeys.publicKey);
+            const program = getProgram(connection, window.solana, PROGRAM_ID);
+            const amount = parseFloat(depositAmount) * LAMPORTS_PER_SOL;
             
             const noteNonce = generateRandomNonce();
-            
             const combinedData = new Uint8Array([
                 ...publicKey.toBytes(),
-                ...encryptedNote,
                 ...noteNonce
             ]);
             const depositId = hashData(combinedData);
@@ -67,23 +109,53 @@ function PrivacyVault() {
             const withdrawalData = {
                 depositId: Array.from(depositId),
                 noteNonce: noteNonce,
-                fhePrivateKey: Array.from(fheKeys.privateKey)
+                destinationWallet: destinationWallet || publicKey.toString(),
+                amount: amount
             };
             const withdrawalString = btoa(JSON.stringify(withdrawalData));
             setWithdrawalString(withdrawalString);
             
+            const [vaultPDA] = getVaultPDA(PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(Array.from(depositId), PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(Array.from(noteNonce), PROGRAM_ID);
+            
+            const encryptedNoteData = new TextEncoder().encode(JSON.stringify({
+                destinationWallet: destinationWallet || publicKey.toString(),
+                amount: amount,
+                timestamp: Date.now()
+            }));
+            
             const signature = new Array(64).fill(0);
             
-            setStatus(`Deposit created! Save this withdrawal string: ${withdrawalString.substring(0, 50)}...`);
+            setStatus('Sending transaction...');
+            
+            const tx = await program.methods
+                .deposit(
+                    Array.from(depositId),
+                    Array.from(noteNonce),
+                    Array.from(encryptedNoteData),
+                    signature,
+                    amount
+                )
+                .accounts({
+                    depositMetadata: depositMetadataPDA,
+                    encryptedNote: encryptedNotePDA,
+                    vault: vaultPDA,
+                    depositor: publicKey,
+                    systemProgram: SystemProgram.programId,
+                })
+                .rpc();
+            
+            setStatus(`Deposit successful! Transaction: ${tx.substring(0, 20)}... Save this withdrawal string: ${withdrawalString.substring(0, 50)}...`);
             
         } catch (error) {
             console.error('Deposit error:', error);
-            setStatus(`Deposit failed: ${error}`);
+            setStatus(`Deposit failed: ${error.message || error}`);
         }
-    }, [publicKey, depositAmount, destinationWallet]);
+    }, [publicKey, depositAmount, destinationWallet, vaultInitialized]);
 
     const handleWithdraw = useCallback(async () => {
-        if (!publicKey) {
+        if (!publicKey || !window.solana) {
             setStatus('Please connect your wallet');
             return;
         }
@@ -92,19 +164,63 @@ function PrivacyVault() {
             setStatus('Processing withdrawal...');
             
             const withdrawalData = JSON.parse(atob(withdrawalString));
-            const { depositId, noteNonce, fhePrivateKey } = withdrawalData;
+            const { depositId, noteNonce, destinationWallet: destWallet, amount } = withdrawalData;
             
-            setStatus(`Withdrawal would be processed for deposit ID: ${depositId.slice(0, 8).join('')}...`);
+            const program = getProgram(connection, window.solana, PROGRAM_ID);
+            
+            const [vaultPDA] = getVaultPDA(PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
+            const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
+            
+            const destinationWalletPubkey = new PublicKey(destWallet);
+            const relayerPubkey = publicKey;
+            
+            setStatus('Sending withdrawal transaction...');
+            
+            const tx = await program.methods
+                .withdraw(
+                    depositId,
+                    noteNonce,
+                    destinationWalletPubkey,
+                    relayerPubkey
+                )
+                .accounts({
+                    depositMetadata: depositMetadataPDA,
+                    encryptedNote: encryptedNotePDA,
+                    vault: vaultPDA,
+                    destinationWallet: destinationWalletPubkey,
+                    relayer: relayerPubkey,
+                    systemProgram: SystemProgram.programId,
+                })
+                .rpc();
+            
+            setStatus(`Withdrawal successful! Transaction: ${tx.substring(0, 20)}... Funds sent to ${destWallet.substring(0, 20)}...`);
             
         } catch (error) {
             console.error('Withdrawal error:', error);
-            setStatus(`Withdrawal failed: ${error}`);
+            setStatus(`Withdrawal failed: ${error.message || error}`);
         }
     }, [publicKey, withdrawalString]);
+
+    React.useEffect(() => {
+        if (publicKey) {
+            checkVaultInitialized();
+        }
+    }, [publicKey, checkVaultInitialized]);
 
     return (
         <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
             <h2>Privacy Vault Interface</h2>
+            
+            {publicKey && !vaultInitialized && (
+                <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7' }}>
+                    <h4>⚠️ Vault Not Initialized</h4>
+                    <p>The vault needs to be initialized before deposits can be made.</p>
+                    <button onClick={initializeVault} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}>
+                        Initialize Vault
+                    </button>
+                </div>
+            )}
             
             <div style={{ marginBottom: '30px' }}>
                 <h3>Deposit SOL</h3>
@@ -128,7 +244,7 @@ function PrivacyVault() {
                         style={{ width: '400px' }}
                     />
                 </div>
-                <button onClick={handleDeposit} disabled={!depositAmount}>
+                <button onClick={handleDeposit} disabled={!depositAmount || !vaultInitialized}>
                     Create Deposit
                 </button>
             </div>
@@ -172,8 +288,10 @@ function PrivacyVault() {
                     <li>Deposit: Creates encrypted note with withdrawal instructions, generates unlinkable deposit ID</li>
                     <li>Withdrawal: Uses the withdrawal string to access your funds at any fresh wallet</li>
                     <li>Privacy: On-chain observers cannot link deposits to withdrawals</li>
-                    <li>Rewards: Earn tokens based on how long you keep funds in the vault</li>
+                    <li>Relayer Fee: 0.5% fee is deducted for withdrawal processing</li>
                 </ul>
+                <p><strong>Program ID:</strong> {PROGRAM_ID.toString()}</p>
+                <p><strong>Vault Status:</strong> {vaultInitialized ? '✅ Initialized' : '❌ Not Initialized'}</p>
             </div>
         </div>
     );

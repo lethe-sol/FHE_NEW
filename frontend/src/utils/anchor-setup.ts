@@ -9,7 +9,7 @@ export const PRIVACY_VAULT_IDL: Idl = {
       "name": "initializeVaultConfig",
       "accounts": [
         { "name": "vaultConfig", "isMut": true, "isSigner": false },
-        { "name": "authority", "isMut": true, "isSigner": true },
+        { "name": "payer", "isMut": true, "isSigner": true },
         { "name": "systemProgram", "isMut": false, "isSigner": false }
       ],
       "args": [
@@ -18,6 +18,15 @@ export const PRIVACY_VAULT_IDL: Idl = {
         { "name": "rewardTokenVault", "type": "publicKey" },
         { "name": "rewardRatePerSecond", "type": "u64" }
       ]
+    },
+    {
+      "name": "initializeVault",
+      "accounts": [
+        { "name": "vault", "isMut": true, "isSigner": false },
+        { "name": "payer", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": []
     },
     {
       "name": "deposit",
@@ -108,6 +117,13 @@ export function getProgram(connection: Connection, wallet: any, programId: Publi
 export function getVaultPDA(programId: PublicKey) {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("vault")],
+    programId
+  );
+}
+
+export function getVaultConfigPDA(programId: PublicKey) {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("vault_config")],
     programId
   );
 }
