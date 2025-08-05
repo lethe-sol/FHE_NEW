@@ -78,7 +78,7 @@ function PrivacyVault() {
             
         } catch (error) {
             console.error('Vault initialization error:', error);
-            setStatus(`Vault initialization failed: ${error.message || error}`);
+            setStatus(`Vault initialization failed: ${error instanceof Error ? error.message : String(error)}`);
         }
     }, [publicKey]);
 
@@ -150,7 +150,7 @@ function PrivacyVault() {
             
         } catch (error) {
             console.error('Deposit error:', error);
-            setStatus(`Deposit failed: ${error.message || error}`);
+            setStatus(`Deposit failed: ${error instanceof Error ? error.message : String(error)}`);
         }
     }, [publicKey, depositAmount, destinationWallet, vaultInitialized]);
 
@@ -198,7 +198,7 @@ function PrivacyVault() {
             
         } catch (error) {
             console.error('Withdrawal error:', error);
-            setStatus(`Withdrawal failed: ${error.message || error}`);
+            setStatus(`Withdrawal failed: ${error instanceof Error ? error.message : String(error)}`);
         }
     }, [publicKey, withdrawalString]);
 
