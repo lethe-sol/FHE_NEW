@@ -58,11 +58,11 @@ pub struct Withdraw<'info> {
 
 pub fn withdraw(
     ctx: Context<Withdraw>,
-    deposit_id: [u8; 32],
-    note_nonce: [u8; 32],
-    destination_wallet: Pubkey,
-    destination_token_account: Pubkey,
-    relayer: Pubkey,
+    _deposit_id: [u8; 32],
+    _note_nonce: [u8; 32],
+    _destination_wallet: Pubkey,
+    _destination_token_account: Pubkey,
+    _relayer: Pubkey,
 ) -> Result<()> {
     let deposit_metadata = &mut ctx.accounts.deposit_metadata;
     let vault_config = &ctx.accounts.vault_config;
