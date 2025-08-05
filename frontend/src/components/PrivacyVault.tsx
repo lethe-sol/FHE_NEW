@@ -200,7 +200,7 @@ function PrivacyVault() {
             const depositId = crypto.getRandomValues(new Uint8Array(32));
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(Array.from(depositId), PROGRAM_ID);
             const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
             
             console.log('Test values:', {
@@ -280,7 +280,7 @@ function PrivacyVault() {
             setWithdrawalString(withdrawalString);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(depositId, PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(Array.from(depositId), PROGRAM_ID);
             const [encryptedNotePDA] = getEncryptedNotePDA(noteNonce, PROGRAM_ID);
             
             const encryptedNoteData = Buffer.from(new TextEncoder().encode(JSON.stringify({
@@ -340,7 +340,7 @@ function PrivacyVault() {
             const program = getProgram(connection, wallet);
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
-            const [depositMetadataPDA] = getDepositMetadataPDA(new Uint8Array(depositId), PROGRAM_ID);
+            const [depositMetadataPDA] = getDepositMetadataPDA(Array.from(depositId), PROGRAM_ID);
             const [encryptedNotePDA] = getEncryptedNotePDA(new Uint8Array(noteNonce), PROGRAM_ID);
             
             const destinationWalletPubkey = new PublicKey(destinationWallet.trim());
