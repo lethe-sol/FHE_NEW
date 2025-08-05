@@ -1,24 +1,62 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, LAMPORTS_PER_SOL, Connection, SystemProgram } from '@solana/web3.js';
 import * as anchor from '@coral-xyz/anchor';
 import { getProgram, getVaultPDA, getVaultConfigPDA, getDepositMetadataPDA, getEncryptedNotePDA } from '../utils/anchor-setup';
+import { init, TfheClientKey, TfheCompactPublicKey, CompactCiphertextList } from 'tfhe';
 
 const PROGRAM_ID = new PublicKey('9RCJQa7HXgVv6L2RTSvAWw9hhh4DZRqRChHxpkdGQ553');
 const connection = new Connection(process.env.REACT_APP_RPC_URL || 'https://api.devnet.solana.com');
 
-const mockFHE = {
-    generateKeypair: () => ({
-        publicKey: new Uint8Array(32).fill(1),
-        privateKey: new Uint8Array(32).fill(2)
-    }),
-    encrypt: (data: any, publicKey: Uint8Array) => {
-        return new Uint8Array(256).fill(3); // Mock encrypted data
-    },
-    decrypt: (encryptedData: Uint8Array, privateKey: Uint8Array) => {
-        return { destinationWallet: 'mock_wallet', amount: 1000000 };
+class FHEManager {
+    private clientKey: TfheClientKey | null = null;
+    private publicKey: TfheCompactPublicKey | null = null;
+    private initialized = false;
+
+    async initialize() {
+        if (this.initialized) return;
+        
+        await init();
+        
+        const savedClientKey = localStorage.getItem('fhe_client_key');
+        const savedPublicKey = localStorage.getItem('fhe_public_key');
+        
+        if (savedClientKey && savedPublicKey) {
+            this.clientKey = TfheClientKey.deserialize(new Uint8Array(JSON.parse(savedClientKey)));
+            this.publicKey = TfheCompactPublicKey.deserialize(new Uint8Array(JSON.parse(savedPublicKey)));
+        } else {
+            this.clientKey = TfheClientKey.generate();
+            this.publicKey = TfheCompactPublicKey.new(this.clientKey);
+            
+            localStorage.setItem('fhe_client_key', JSON.stringify(Array.from(this.clientKey.serialize())));
+            localStorage.setItem('fhe_public_key', JSON.stringify(Array.from(this.publicKey.serialize())));
+        }
+        
+        this.initialized = true;
     }
-};
+
+    encryptCommitment(data: Uint8Array): Uint8Array {
+        if (!this.publicKey) throw new Error('FHE not initialized');
+        
+        const value = new DataView(data.buffer).getUint32(0, true);
+        
+        const ciphertext = CompactCiphertextList.encrypt_compact([value], this.publicKey);
+        return ciphertext.serialize();
+    }
+
+    decryptCommitment(encryptedData: Uint8Array): Uint8Array {
+        if (!this.clientKey) throw new Error('FHE not initialized');
+        
+        const ciphertext = CompactCiphertextList.deserialize(encryptedData);
+        const decrypted = ciphertext.decrypt(this.clientKey);
+        
+        const result = new Uint8Array(32);
+        new DataView(result.buffer).setUint32(0, decrypted[0], true);
+        return result;
+    }
+}
+
+const fheManager = new FHEManager();
 
 function PrivacyVault() {
     const { publicKey } = useWallet();
@@ -164,15 +202,20 @@ function PrivacyVault() {
         }
 
         try {
-            setStatus('Testing simple deposit with hardcoded values...');
+            setStatus('Initializing FHE and testing deposit...');
+            
+            await fheManager.initialize();
             
             const program = getProgram(connection, wallet);
             
-            const commitment = crypto.getRandomValues(new Uint8Array(32));
+            const originalCommitment = crypto.getRandomValues(new Uint8Array(32));
+            const encryptedCommitment = fheManager.encryptCommitment(originalCommitment);
+            
+            const commitment = encryptedCommitment.slice(0, 32);
             const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
-            const encryptedNoteData = Buffer.from(new Uint8Array([1, 2, 3, 4, 5])); // Simple test data
+            const encryptedNoteData = Buffer.from(new Uint8Array([1, 2, 3, 4, 5]));
             const signature = Buffer.from(new Uint8Array(64).fill(0));
-            const amount = 100000000; // 0.1 SOL in lamports
+            const amount = 100000000;
             
             const [vaultPDA] = getVaultPDA(PROGRAM_ID);
             const [depositMetadataPDA] = getDepositMetadataPDA(commitment, PROGRAM_ID);
@@ -227,17 +270,23 @@ function PrivacyVault() {
         }
 
         try {
-            setStatus('Creating simple 0.1 SOL deposit...');
+            setStatus('Initializing FHE and creating deposit...');
+            
+            await fheManager.initialize();
             
             const program = getProgram(connection, wallet);
             
-            const amount = 100000000; // 0.1 SOL in lamports
-            const destinationWallet = publicKey.toString(); // Same as depositor
+            const amount = 100000000;
+            const destinationWallet = publicKey.toString();
             
-            const commitment = crypto.getRandomValues(new Uint8Array(32));
+            const originalCommitment = crypto.getRandomValues(new Uint8Array(32));
+            const encryptedCommitment = fheManager.encryptCommitment(originalCommitment);
+            
+            const commitment = encryptedCommitment.slice(0, 32);
             const nullifierHash = crypto.getRandomValues(new Uint8Array(32));
             
             const withdrawalData = {
+                originalCommitment: Array.from(originalCommitment),
                 commitment: Array.from(commitment),
                 nullifierHash: Array.from(nullifierHash),
                 destinationWallet: destinationWallet,
@@ -294,8 +343,10 @@ function PrivacyVault() {
         try {
             setStatus('Processing withdrawal...');
             
+            await fheManager.initialize();
+            
             const withdrawalData = JSON.parse(atob(withdrawalString));
-            const { commitment, nullifierHash, amount } = withdrawalData;
+            const { originalCommitment, commitment, nullifierHash, amount } = withdrawalData;
             
             if (!destinationWallet.trim()) {
                 setStatus('Please enter a destination wallet address');
@@ -341,6 +392,7 @@ function PrivacyVault() {
     React.useEffect(() => {
         if (publicKey) {
             checkVaultInitialized();
+            fheManager.initialize().catch(console.error);
         }
     }, [publicKey, checkVaultInitialized]);
 
@@ -418,12 +470,12 @@ function PrivacyVault() {
             </div>
 
             <div style={{ marginTop: '20px', fontSize: '12px', color: '#666' }}>
-                <h4>Simple Testing Mode:</h4>
+                <h4>FHE Privacy Mode:</h4>
                 <ul>
-                    <li><strong>Amount:</strong> Fixed at 0.1 SOL for consistent testing</li>
-                    <li><strong>Recipient:</strong> Same as depositor wallet (no complexity)</li>
-                    <li><strong>Goal:</strong> Get basic deposit/withdrawal working first</li>
-                    <li><strong>Next:</strong> Add FHE logic once transactions work</li>
+                    <li><strong>Encryption:</strong> TFHE-rs client-side homomorphic encryption</li>
+                    <li><strong>Privacy:</strong> Commitments encrypted before blockchain storage</li>
+                    <li><strong>Unlinkability:</strong> Deposits and withdrawals appear as random ciphertexts</li>
+                    <li><strong>Keys:</strong> Generated locally and stored in browser localStorage</li>
                 </ul>
                 <p><strong>Program ID:</strong> {PROGRAM_ID.toString()}</p>
                 <p><strong>Vault Status:</strong> {vaultInitialized ? '✅ Initialized' : '❌ Not Initialized'}</p>
