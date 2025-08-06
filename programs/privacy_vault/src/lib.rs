@@ -72,4 +72,43 @@ pub mod privacy_vault {
             relayer,
         )
     }
+
+    pub fn initialize_merkle_tree(
+        ctx: Context<InitializeMerkleTree>,
+        bump: u8,
+        index: u64,
+        merkle_tree_config: Vec<u8>,
+        nullifier_queue_config: Vec<u8>,
+    ) -> Result<()> {
+        instructions::initialize_merkle_tree(ctx, bump, index, merkle_tree_config, nullifier_queue_config)
+    }
+
+    pub fn compressed_deposit(
+        ctx: Context<CompressedDeposit>,
+        encrypted_note_data: Vec<u8>,
+        signature: [u8; 64],
+        amount: u64,
+    ) -> Result<()> {
+        instructions::compressed_deposit(ctx, encrypted_note_data, signature, amount)
+    }
+
+    pub fn compressed_withdraw(
+        ctx: Context<CompressedWithdraw>,
+        nullifier: [u8; 32],
+        leaf_index: u64,
+        merkle_proof: Vec<[u8; 32]>,
+        destination_wallet: Pubkey,
+        relayer: Pubkey,
+        withdrawal_amount: u64,
+    ) -> Result<()> {
+        instructions::compressed_withdraw(
+            ctx,
+            nullifier,
+            leaf_index,
+            merkle_proof,
+            destination_wallet,
+            relayer,
+            withdrawal_amount,
+        )
+    }
 }

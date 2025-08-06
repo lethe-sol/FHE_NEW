@@ -18,4 +18,10 @@ pub enum ErrorCode {
     ArithmeticOverflow,
     #[msg("Encrypted note data too large")]
     NoteTooLarge,
+    #[msg("Invalid merkle proof")]
+    InvalidMerkleProof,
+    #[msg("Nullifier already used")]
+    NullifierAlreadyUsed,
+    #[msg("Light Protocol CPI failed")]
+    LightProtocolError,
 }

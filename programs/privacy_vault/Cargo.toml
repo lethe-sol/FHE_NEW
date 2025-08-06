@@ -19,3 +19,5 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 [dependencies]
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
+account-compression = { version = "2.0.0", features = ["cpi"] }
+light-hasher = "3.1.0"
